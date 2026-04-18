@@ -126,6 +126,8 @@ tr:last-child td{border-bottom:none}
 @media(max-width:900px){.two-col{grid-template-columns:1fr}}
 @media(max-width:768px){.sidebar{width:100%;height:auto;position:relative}.main{margin-left:0}.stats-grid{grid-template-columns:repeat(2,1fr)}.frow{grid-template-columns:1fr}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -415,11 +417,9 @@ document.getElementById('s-done').textContent='—';
 // ═══════════════════════════════════════════
 let db=null, fbCollection, fbAddDoc, fbUpdateDoc, fbDeleteDoc, fbDoc, fbOnSnapshot, fbQuery, fbOrderBy, fbSetDoc, fbServerTimestamp;
 
-async function initFirebase(){
+function initFirebase(){
   try {
-    const {initializeApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const fb = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-    const app = initializeApp({
+    firebase.initializeApp({
       apiKey:"AIzaSyCOoBJNUUGA2SIhW-3F-ACvjEzBm8ZRaro",
       authDomain:"mercado-libre-ganga.firebaseapp.com",
       projectId:"mercado-libre-ganga",
@@ -427,27 +427,37 @@ async function initFirebase(){
       messagingSenderId:"427467710870",
       appId:"1:427467710870:web:6e6a65a56b3c1b109a3db7"
     });
-    db = fb.getFirestore(app);
-    fbCollection=fb.collection; fbAddDoc=fb.addDoc; fbUpdateDoc=fb.updateDoc;
-    fbDeleteDoc=fb.deleteDoc; fbDoc=fb.doc; fbOnSnapshot=fb.onSnapshot;
-    fbQuery=fb.query; fbOrderBy=fb.orderBy; fbSetDoc=fb.setDoc;
-    fbServerTimestamp=fb.serverTimestamp;
+    const fs = firebase.firestore();
+    db = fs;
+    fbCollection=(d,c)=>d.collection(c);
+    fbAddDoc=(ref,data)=>ref.add(data);
+    fbUpdateDoc=(ref,data)=>ref.update(data);
+    fbDeleteDoc=(ref)=>ref.delete();
+    fbDoc=(d,c,id)=>d.collection(c).doc(id);
+    fbOnSnapshot=(ref,cb)=>ref.onSnapshot(snap=>{
+      const adapted={docs:snap.docs.map(d=>({id:d.id,data:()=>d.data(),...d})),exists:snap.exists,data:snap.data?snap.data.bind(snap):undefined};
+      cb(adapted);
+    });
+    fbQuery=(ref,...args)=>{ let q=ref; args.forEach(a=>{if(a&&a._type==='orderBy')q=q.orderBy(a.field,a.dir);}); return q; };
+    fbOrderBy=(f,d='asc')=>({_type:'orderBy',field:f,dir:d});
+    fbSetDoc=(ref,data)=>ref.set(data,{merge:true});
+    fbServerTimestamp=()=>firebase.firestore.FieldValue.serverTimestamp();
 
     document.getElementById('conn-status').innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block"></span>&nbsp;Conectado';
     document.getElementById('conn-status').className='conn-ok';
 
     // Realtime listeners
-    fbOnSnapshot(fbQuery(fbCollection(db,'tickets'),fbOrderBy('createdAt','desc')), snap=>{
+    db.collection('tickets').orderBy('createdAt','desc').onSnapshot(snap=>{
       tickets=snap.docs.map(d=>({id:d.id,...d.data()}));
       ticketCounter=tickets.length>0?Math.max(...tickets.map(t=>t.num||0))+1:1;
       renderAll();
     });
-    fbOnSnapshot(fbQuery(fbCollection(db,'plan'),fbOrderBy('fecha','asc')), snap=>{
+    db.collection('plan').orderBy('fecha','asc').onSnapshot(snap=>{
       plans=snap.docs.map(d=>({id:d.id,...d.data()}));
       renderPlan();
     });
-    fbOnSnapshot(fbDoc(db,'metricas','latest'), snap=>{
-      if(snap.exists()) renderMetrics(snap.data());
+    db.collection('metricas').doc('latest').onSnapshot(snap=>{
+      if(snap.exists) renderMetrics(snap.data());
     });
   } catch(e){
     document.getElementById('conn-status').innerHTML='<span style="width:8px;height:8px;border-radius:50%;background:var(--red-txt);display:inline-block"></span>&nbsp;Sin conexión';
@@ -456,8 +466,7 @@ async function initFirebase(){
   }
 }
 
-// Start Firebase in background — don't block UI
-setTimeout(initFirebase, 100);
+setTimeout(initFirebase, 300);
 
 // ═══════════════════════════════════════════
 // HELPERS
@@ -527,7 +536,7 @@ window.syncMetrics=async function(){
       if(r&&r.success&&r.data){
         txt.textContent='Guardando...';
         const d=r.data,rows=d.ventas||[];
-        await fbSetDoc(fbDoc(db,'metricas','latest'),{ventas:{total:rows.reduce((s,x)=>s+x.total,0),costos:rows.reduce((s,x)=>s+x.costos,0),unidades:rows.reduce((s,x)=>s+x.unidades,0),ventas:rows.reduce((s,x)=>s+x.ventas,0)},publicaciones:{total:(d.publicaciones||[]).length,activas:(d.publicaciones||[]).filter(p=>p.estado==='active').length,pausadas:(d.publicaciones||[]).filter(p=>p.estado!=='active').length},metricas:{totalVisitas:d.metricas?.totalVisitas||0},reputacion:d.reputacion||{},topPubs:(d.ventasPorPublicacion||[]).slice(0,10).map(p=>({titulo:p.titulo,total:Math.round(p.total)})),syncedAt:new Date().toISOString(),syncedBy:currentUser.name});
+        await db.collection('metricas','latest'),{ventas:{total:rows.reduce((s,x)=>s+x.total,0),costos:rows.reduce((s,x)=>s+x.costos,0),unidades:rows.reduce((s,x)=>s+x.unidades,0),ventas:rows.reduce((s,x)=>s+x.ventas,0)},publicaciones:{total:(d.publicaciones||[]).length,activas:(d.publicaciones||[]).filter(p=>p.estado==='active').length,pausadas:(d.publicaciones||[]).filter(p=>p.estado!=='active').length},metricas:{totalVisitas:d.metricas?.totalVisitas||0},reputacion:d.reputacion||{},topPubs:(d.ventasPorPublicacion||[]).slice(0,10).map(p=>({titulo:p.titulo,total:Math.round(p.total)})),syncedAt:new Date().toISOString(),syncedBy:currentUser.name});
         bar.style.display='none';toast('Métricas sincronizadas');return;
       }
     }
@@ -536,7 +545,7 @@ window.syncMetrics=async function(){
   if(confirm('No se pudo conectar con la extensión.
 
 ¿Cargar datos de ejemplo?')){
-    await fbSetDoc(fbDoc(db,'metricas','latest'),{ventas:{total:2850000,costos:427500,unidades:284,ventas:231},publicaciones:{total:47,activas:39,pausadas:8},metricas:{totalVisitas:12840},reputacion:{level_id:'5_green',metrics:{claims:{rate:0.008,value:2,period:'60 días'},cancellations:{rate:0.012,value:3,period:'60 días'},delayed_handling_time:{rate:0.021,value:5,period:'60 días'}}},topPubs:[{titulo:'Auriculares Bluetooth X200 Pro',total:485000},{titulo:'Cargador USB-C 65W GaN',total:312000},{titulo:'Funda Notebook 15"',total:198000},{titulo:'Mouse Inalámbrico',total:175000},{titulo:'Hub USB 4 puertos',total:142000}],syncedAt:new Date().toISOString(),syncedBy:currentUser.name});
+    await db.collection('metricas','latest'),{ventas:{total:2850000,costos:427500,unidades:284,ventas:231},publicaciones:{total:47,activas:39,pausadas:8},metricas:{totalVisitas:12840},reputacion:{level_id:'5_green',metrics:{claims:{rate:0.008,value:2,period:'60 días'},cancellations:{rate:0.012,value:3,period:'60 días'},delayed_handling_time:{rate:0.021,value:5,period:'60 días'}}},topPubs:[{titulo:'Auriculares Bluetooth X200 Pro',total:485000},{titulo:'Cargador USB-C 65W GaN',total:312000},{titulo:'Funda Notebook 15"',total:198000},{titulo:'Mouse Inalámbrico',total:175000},{titulo:'Hub USB 4 puertos',total:142000}],syncedAt:new Date().toISOString(),syncedBy:currentUser.name});
     toast('Datos de ejemplo cargados');
   }
 };
@@ -551,10 +560,10 @@ window.saveTicket=async function(){
   if(!titulo){document.getElementById('t-titulo').style.outline='2px solid var(--red-txt)';return;}
   document.getElementById('t-titulo').style.outline='';
   if(!db){toast('Conectando con Firebase, intentá en un momento...');return;}
-  const data={titulo,desc:document.getElementById('t-desc').value,equipo:document.getElementById('t-equipo').value,prio:document.getElementById('t-prio').value,estado:document.getElementById('t-estado').value,fecha:document.getElementById('t-fecha').value,autor:currentUser.name,updatedAt:fbServerTimestamp()};
-  try{if(editingTicketId){await fbUpdateDoc(fbDoc(db,'tickets',editingTicketId),data);toast('Ticket actualizado');}else{await fbAddDoc(fbCollection(db,'tickets'),{...data,num:ticketCounter,createdAt:fbServerTimestamp()});toast('Ticket creado — visible para todo el equipo');}closeModal('modal-ticket');}catch(e){toast('Error: '+e.message);}
+  const data={titulo,desc:document.getElementById('t-desc').value,equipo:document.getElementById('t-equipo').value,prio:document.getElementById('t-prio').value,estado:document.getElementById('t-estado').value,fecha:document.getElementById('t-fecha').value,autor:currentUser.name,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+  try{if(editingTicketId){await db.collection('tickets').doc(editingTicketId).update(data);toast('Ticket actualizado');}else{await db.collection('tickets').add({...data,num:ticketCounter,createdAt:firebase.firestore.FieldValue.serverTimestamp()});toast('Ticket creado — visible para todo el equipo');}closeModal('modal-ticket');}catch(e){toast('Error: '+e.message);}
 };
-window.deleteTicket=async function(){if(!editingTicketId||!db)return;try{await fbDeleteDoc(fbDoc(db,'tickets',editingTicketId));toast('Eliminado');closeModal('modal-ticket');}catch(e){toast('Error');}};
+window.deleteTicket=async function(){if(!editingTicketId||!db)return;try{await db.collection('tickets').doc(editingTicketId).delete();toast('Eliminado');closeModal('modal-ticket');}catch(e){toast('Error');}};
 
 // ═══════════════════════════════════════════
 // PLAN CRUD
@@ -566,10 +575,10 @@ window.savePlan=async function(){
   if(!titulo){document.getElementById('p-titulo').style.outline='2px solid var(--red-txt)';return;}
   document.getElementById('p-titulo').style.outline='';
   if(!db){toast('Conectando...');return;}
-  const data={titulo,copy:document.getElementById('p-copy').value,tipo:document.getElementById('p-tipo').value,canal:document.getElementById('p-canal').value,resp:document.getElementById('p-resp').value,estado:document.getElementById('p-estado').value,fecha:document.getElementById('p-fecha').value,updatedAt:fbServerTimestamp()};
-  try{if(editingPlanId){await fbUpdateDoc(fbDoc(db,'plan',editingPlanId),data);toast('Actualizado');}else{await fbAddDoc(fbCollection(db,'plan'),{...data,createdAt:fbServerTimestamp()});toast('Publicación agregada');}closeModal('modal-plan');}catch(e){toast('Error: '+e.message);}
+  const data={titulo,copy:document.getElementById('p-copy').value,tipo:document.getElementById('p-tipo').value,canal:document.getElementById('p-canal').value,resp:document.getElementById('p-resp').value,estado:document.getElementById('p-estado').value,fecha:document.getElementById('p-fecha').value,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+  try{if(editingPlanId){await db.collection('plan').doc(editingPlanId).update(data);toast('Actualizado');}else{await db.collection('plan').add({...data,createdAt:firebase.firestore.FieldValue.serverTimestamp()});toast('Publicación agregada');}closeModal('modal-plan');}catch(e){toast('Error: '+e.message);}
 };
-window.deletePlan=async function(){if(!editingPlanId||!db)return;try{await fbDeleteDoc(fbDoc(db,'plan',editingPlanId));toast('Eliminado');closeModal('modal-plan');}catch(e){toast('Error');}};
+window.deletePlan=async function(){if(!editingPlanId||!db)return;try{await db.collection('plan').doc(editingPlanId).delete();toast('Eliminado');closeModal('modal-plan');}catch(e){toast('Error');}};
 
 // ═══════════════════════════════════════════
 // NAV

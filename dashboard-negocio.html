@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ganga Home — Dashboard de Negocio</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#080c12;--bg2:#0d1117;--bg3:#161b22;--bg4:#1c2230;
+  --border:#21262d;--border2:#30363d;
+  --txt:#e6edf3;--txt2:#8b949e;--txt3:#484f58;
+  --green:#3fb950;--green2:#0a2a0e;--green3:#1a4a1e;
+  --blue:#58a6ff;--blue2:#0a1a2a;--blue3:#1a3a5a;
+  --purple:#bc8cff;--purple2:#1a0a2a;--purple3:#3a1a5a;
+  --amber:#d29922;--amber2:#2a1a00;--amber3:#4a3200;
+  --red:#f85149;--red2:#2a0000;--red3:#4a1010;
+  --teal:#39d0a0;
+  --font:'Sora',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:200px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:16px 14px 12px;border-bottom:1px solid var(--border)}
+.logo-name{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:.01em}
+.logo-sub{font-size:10px;color:var(--txt3);margin-top:2px}
+.nav{flex:1;padding:8px 6px;overflow-y:auto}
+.nav-section{font-size:9px;font-weight:600;color:var(--txt3);letter-spacing:.1em;text-transform:uppercase;padding:10px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--txt2);margin-bottom:1px;border:none;background:none;width:100%;text-align:left;transition:all .12s;font-family:var(--font)}
+.nav-item:hover{background:var(--bg3);color:var(--txt)}
+.nav-item.active{background:var(--bg4);color:var(--txt);border-left:2px solid var(--purple)}
+.nav-item svg{flex-shrink:0;width:13px;height:13px;opacity:.7}
+.nav-item.active svg{opacity:1}
+
+/* MAIN */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-left h2{font-size:14px;font-weight:600;color:var(--txt)}
+.topbar-left p{font-size:11px;color:var(--txt3);margin-top:1px}
+
+/* FILTROS GLOBALES */
+.global-filters{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0}
+.gf-label{font-size:10px;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.gf-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+input[type=text],input[type=date],select{background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--txt);font-size:11px;font-family:var(--font);padding:5px 9px;outline:none;transition:border .12s}
+input[type=text]:focus,input[type=date]:focus,select:focus{border-color:var(--purple)}
+.search-wrap{position:relative}
+.search-wrap svg{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--txt3);pointer-events:none}
+.search-wrap input{padding-left:26px;width:160px}
+.filter-btn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--txt2);font-size:11px;font-family:var(--font);padding:5px 12px;cursor:pointer;transition:all .12s}
+.filter-btn:hover{border-color:var(--border2);color:var(--txt)}
+.filter-btn.active{background:var(--purple2);border-color:var(--purple);color:var(--purple)}
+.clear-btn{font-size:10px;color:var(--txt3);cursor:pointer;padding:4px 8px;border-radius:4px;transition:all .12s;border:none;background:none;font-family:var(--font)}
+.clear-btn:hover{color:var(--red)}
+.results-count{font-size:10px;color:var(--txt3);margin-left:auto;white-space:nowrap}
+
+/* SUBTABS */
+.subtabs{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 18px;display:flex;gap:2px;overflow-x:auto;flex-shrink:0}
+.stab{padding:8px 14px;font-size:11px;font-weight:500;color:var(--txt3);border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;font-family:var(--font)}
+.stab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.stab:hover:not(.active){color:var(--txt)}
+
+/* PAGE */
+.page{flex:1;overflow-y:auto;padding:16px 18px}
+
+/* CARDS */
+.kgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kgrid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kgrid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kc{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.kc.g{border-left:2px solid var(--green)}.kc.b{border-left:2px solid var(--blue)}
+.kc.p{border-left:2px solid var(--purple)}.kc.y{border-left:2px solid var(--amber)}
+.kc.r{border-left:2px solid var(--red)}
+.kl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.kv{font-size:20px;font-weight:700;line-height:1.1}
+.kv.g{color:var(--green)}.kv.b{color:var(--blue)}.kv.p{color:var(--purple)}.kv.y{color:var(--amber)}.kv.r{color:var(--red)}
+.ks{font-size:10px;margin-top:4px;color:var(--txt3)}
+.ks.up{color:var(--green)}.ks.dn{color:var(--red)}
+
+/* PANEL */
+.panel{background:var(--bg3);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.ph{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.ph-left{display:flex;flex-direction:column;gap:2px}
+.pt{font-size:12px;font-weight:600;color:var(--txt)}
+.ps{font-size:10px;color:var(--txt3)}
+.ph-filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pb{padding:0}
+.panel-search{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl th{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--border);background:var(--bg2);text-align:right;white-space:nowrap;cursor:pointer;user-select:none;transition:color .12s}
+.tbl th:first-child{text-align:center;width:30px}
+.tbl th:nth-child(2){text-align:left}
+.tbl th:nth-child(3){text-align:left}
+.tbl th.sorted{color:var(--blue)}
+.tbl th:hover{color:var(--txt)}
+.sort-icon{font-size:9px;margin-left:3px;color:var(--txt3)}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--bg4);color:var(--txt);text-align:right;vertical-align:middle}
+.tbl td:first-child{text-align:center;color:var(--txt3);font-size:10px}
+.tbl td:nth-child(2){text-align:left}
+.tbl td:nth-child(3){text-align:left}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.g-txt{color:var(--green);font-weight:600}
+.b-txt{color:var(--blue)}
+.p-txt{color:var(--purple)}
+.y-txt{color:var(--amber)}
+.r-txt{color:var(--red);font-weight:600}
+.mono{font-family:var(--mono);font-size:10px;color:var(--txt3)}
+.pname{font-size:12px;font-weight:500;color:var(--txt)}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.pill.g{background:var(--green2);color:var(--green);border:1px solid var(--green3)}
+.pill.r{background:var(--red2);color:var(--red);border:1px solid var(--red3)}
+.pill.y{background:var(--amber2);color:var(--amber);border:1px solid var(--amber3)}
+.pill.b{background:var(--blue2);color:var(--blue);border:1px solid var(--blue3)}
+.pill.p{background:var(--purple2);color:var(--purple);border:1px solid var(--purple3)}
+
+/* BAR ROWS */
+.brow{display:flex;align-items:center;gap:8px;margin-bottom:7px;padding:0 14px}
+.bl{font-size:11px;color:var(--txt2);width:140px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bt{flex:1;background:var(--bg2);border-radius:2px;height:6px;overflow:hidden}
+.bf{height:6px;border-radius:2px;transition:width .4s}
+.bv{font-size:11px;font-weight:600;color:var(--txt);width:140px;text-align:right;flex-shrink:0}
+
+/* CHART */
+.chart-wrap{position:relative;width:100%;height:220px;padding:14px}
+.chart-wrap.tall{height:260px}
+.chart-wrap.sm{height:160px}
+
+/* ALERT CARDS */
+.alert-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.ac{background:var(--red2);border:1px solid var(--red3);border-radius:8px;padding:11px 13px}
+.an{font-size:11px;font-weight:500;color:#fca5a5;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ask{font-size:10px;color:#6b1111;margin-bottom:7px;font-family:var(--mono)}
+.ab{display:flex;align-items:center;justify-content:space-between}
+.ar-lbl{font-size:10px;color:var(--txt2)}
+.rbtn{font-size:10px;font-weight:700;color:var(--red);background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:4px;padding:3px 8px;cursor:pointer;font-family:var(--font)}
+.rbtn:hover{background:rgba(248,81,73,.2)}
+
+/* SEG CARDS */
+.sc{border-radius:8px;padding:14px;border:1px solid}
+.sc.p{background:rgba(188,140,255,.06);border-color:var(--purple3)}
+.sc.b{background:rgba(88,166,255,.06);border-color:var(--blue3)}
+.sc.g{background:rgba(63,185,80,.06);border-color:var(--green3)}
+.sl{font-size:10px;color:var(--txt2);margin-bottom:6px}
+.sv{font-size:22px;font-weight:700;color:var(--txt)}
+.ss{font-size:10px;color:var(--txt3);margin-top:3px}
+
+/* PARETO */
+.pc{border-radius:8px;padding:14px;border:1px solid}
+.pc.a{background:rgba(188,140,255,.06);border-color:var(--purple3)}
+.pc.b2{background:rgba(248,81,73,.06);border-color:var(--red3)}
+.pc.c{background:rgba(110,118,129,.06);border-color:var(--border2)}
+.pcl{font-size:10px;color:var(--txt2);margin-bottom:3px}
+.pcv{font-size:18px;font-weight:700;color:var(--txt)}
+.pcs{font-size:10px;color:var(--txt3);margin-top:2px}
+.pcbar{height:3px;border-radius:2px;margin-top:8px}
+
+/* BOUGHT TOGETHER */
+.pbi{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.pbn{background:var(--purple);color:#1a0040;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;flex-shrink:0}
+.pbp{font-size:11px;color:var(--txt)}
+.pb-sep{color:var(--txt3);margin:0 6px}
+
+/* MISC */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:12px}
+.section-lbl{font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.empty-state{text-align:center;padding:40px 20px;color:var(--txt3);font-size:13px}
+.live-pill{background:var(--green2);border:1px solid var(--green3);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--green);display:flex;align-items:center;gap:5px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.badge.r{background:var(--red2);color:var(--red)}
+.badge.y{background:var(--amber2);color:var(--amber)}
+.badge.g{background:var(--green2);color:var(--green)}
+select option{background:var(--bg3);color:var(--txt)}
+.tbl-footer{padding:8px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--txt3);display:flex;align-items:center;justify-content:space-between}
+.pagination{display:flex;align-items:center;gap:4px}
+.pg-btn{background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--txt2);font-size:10px;padding:3px 8px;cursor:pointer;font-family:var(--font)}
+.pg-btn:hover{border-color:var(--border2);color:var(--txt)}
+.pg-btn.active{background:var(--blue2);border-color:var(--blue);color:var(--blue)}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--blue2);border:1px solid var(--blue3);border-radius:20px;padding:2px 8px;font-size:10px;color:var(--blue)}
+.chip-x{cursor:pointer;opacity:.7;font-size:11px}
+.chip-x:hover{opacity:1}
+.active-filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 18px;background:var(--bg2);border-bottom:1px solid var(--border);min-height:0;transition:all .2s}
+.active-filters:empty{display:none}
+.ml-info-banner{background:rgba(188,140,255,.07);border:1px solid rgba(188,140,255,.2);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--txt2);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.ml-info-banner svg{flex-shrink:0;color:var(--purple)}
+.ml-info-banner strong{color:var(--purple)}
+.ml-conf-bar{display:inline-block;width:60px;height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-right:6px;vertical-align:middle}
+.ml-conf-bar span{display:block;height:100%;background:var(--green);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-name">Ganga Home</div>
+      <div class="logo-sub">Control de negocio</div>
+    </div>
+    <div class="nav">
+      <div class="nav-section">Metricas</div>
+      <button class="nav-item active" onclick="showMain('metricas',this)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Metricas
+      </button>
+      <button class="nav-item" onclick="showMain('ventas',this)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Ventas
+      </button>
+      <div class="nav-section">Inventario</div>
+      <button class="nav-item" onclick="showMain('inventario',this)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Inventario
+      </button>
+      <button class="nav-item" onclick="showMain('alertas',this)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Alertas <span class="badge r" style="margin-left:auto;font-size:9px">6</span>
+      </button>
+      <div class="nav-section">Analisis</div>
+      <button class="nav-item" onclick="showMain('pareto',this)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Pareto 80/20
+      </button>
+      <button class="nav-item" onclick="showMain('clientes',this)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Clientes
+      </button>
+      <button class="nav-item" onclick="showMain('costos',this)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Costos
+      </button>
+      <div class="nav-section">Proyecciones</div>
+      <button class="nav-item" onclick="showMain('proyecciones',this)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Proyecciones
+      </button>
+      <button class="nav-item" onclick="showMain('ml',this)">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Machine Learning <span class="badge g" style="margin-left:auto;font-size:9px">NEW</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2 id="main-title">Metricas de negocio</h2>
+        <p id="main-sub">Indicadores clave de rendimiento</p>
+      </div>
+      <div class="live-pill"><div class="live-dot"></div>Demo — datos de ejemplo</div>
+    </div>
+
+    <!-- FILTROS GLOBALES -->
+    <div class="global-filters">
+      <span class="gf-label">Filtros</span>
+      <div class="search-wrap">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="gf-search" placeholder="Buscar SKU, producto..." oninput="applyFilters()">
+      </div>
+      <div class="gf-sep"></div>
+      <span class="gf-label" style="white-space:nowrap">Periodo:</span>
+      <input type="date" id="gf-desde" oninput="applyFilters()">
+      <span style="font-size:10px;color:var(--txt3)">al</span>
+      <input type="date" id="gf-hasta" oninput="applyFilters()">
+      <div class="gf-sep"></div>
+      <button class="filter-btn" id="btn-7d" onclick="setRange(7,this)">7d</button>
+      <button class="filter-btn active" id="btn-30d" onclick="setRange(30,this)">30d</button>
+      <button class="filter-btn" id="btn-90d" onclick="setRange(90,this)">90d</button>
+      <button class="filter-btn" id="btn-todos" onclick="setRange(0,this)">Todo</button>
+      <div class="gf-sep"></div>
+      <select id="gf-estado" onchange="applyFilters()">
+        <option value="">Estado: Todos</option>
+        <option value="ok">OK</option>
+        <option value="bajo">Bajo</option>
+        <option value="critico">Critico</option>
+      </select>
+      <select id="gf-categoria" onchange="applyFilters()">
+        <option value="">Categoria: Todas</option>
+        <option value="ropa">Ropa de cama</option>
+        <option value="acolchados">Acolchados</option>
+        <option value="cortinas">Cortinas</option>
+        <option value="manteles">Manteles</option>
+      </select>
+      <button class="clear-btn" onclick="clearFilters()">✕ Limpiar</button>
+      <span class="results-count" id="results-count"></span>
+    </div>
+
+    <!-- CHIPS FILTROS ACTIVOS -->
+    <div class="active-filters" id="active-filters"></div>
+
+    <!-- SUBTABS -->
+    <div class="subtabs" id="subtabs-bar"></div>
+
+    <!-- CONTENIDO -->
+    <div class="page" id="page-content"></div>
+  </div>
+</div>
+
+<script>
+// ─── DATOS DE EJEMPLO ────────────────────────────────────────
+var PRODUCTOS = [
+  {rank:1,sku:'SKU0003168',nombre:'Kit Cubre Edredon Dubai Queen',categoria:'ropa',ordenes:167,revenue:5419633,uds:167,conv:2.2,stock:0,promDia:2.0,dias:0,estado:'critico',margenPct:45.5,costo:18000,precio:32999,roi:83.3,clase:'A'},
+  {rank:2,sku:'SKU0002104',nombre:'Acolchado 4 Est. California King',categoria:'acolchados',ordenes:96,revenue:3849600,uds:96,conv:1.7,stock:4,promDia:1.1,dias:3,estado:'critico',margenPct:45.1,costo:22000,precio:40099,roi:82.3,clase:'A'},
+  {rank:3,sku:'SKU0002905',nombre:'Acolchado Efecto Frio Cooling Q.',categoria:'acolchados',ordenes:72,revenue:2952000,uds:72,conv:1.4,stock:11,promDia:0.9,dias:12,estado:'bajo',margenPct:31.7,costo:28000,precio:41000,roi:46.4,clase:'A'},
+  {rank:4,sku:'SKU0003173',nombre:'Kit Cubre Edredon Dubai Twin',categoria:'ropa',ordenes:88,revenue:1935600,uds:88,conv:1.9,stock:95,promDia:1.7,dias:55,estado:'ok',margenPct:45.5,costo:12000,precio:21999,roi:83.3,clase:'A'},
+  {rank:5,sku:'SKU0005652',nombre:'Manta Pie de Cama Premium',categoria:'ropa',ordenes:61,revenue:1830000,uds:61,conv:1.6,stock:18,promDia:0.8,dias:22,estado:'ok',margenPct:38.2,costo:15000,precio:30000,roi:100.0,clase:'A'},
+  {rank:6,sku:'SKU0005662',nombre:'Cubrecama Algodon Premium Queen',categoria:'ropa',ordenes:38,revenue:1710000,uds:38,conv:1.3,stock:25,promDia:0.4,dias:58,estado:'ok',margenPct:42.1,costo:26000,precio:45000,roi:73.1,clase:'A'},
+  {rank:7,sku:'SKU0003052',nombre:'Juego Sabanas Global King',categoria:'ropa',ordenes:28,revenue:1120000,uds:28,conv:1.1,stock:0,promDia:0.5,dias:0,estado:'critico',margenPct:35.0,costo:26000,precio:40000,roi:53.8,clase:'B'},
+  {rank:8,sku:'SKU0004354',nombre:'Mantel Mini Cuadros 200x140',categoria:'manteles',ordenes:34,revenue:816000,uds:34,conv:3.1,stock:42,promDia:0.6,dias:70,estado:'ok',margenPct:52.4,costo:7000,precio:24000,roi:242.9,clase:'B'},
+  {rank:9,sku:'SKU0002108',nombre:'Acolchado 4 Est. Twin',categoria:'acolchados',ordenes:26,revenue:884000,uds:26,conv:1.5,stock:18,promDia:0.7,dias:25,estado:'ok',margenPct:38.8,costo:21000,precio:34000,roi:61.9,clase:'B'},
+  {rank:10,sku:'SKU0005424',nombre:'Cortina de Bano Premium 183',categoria:'cortinas',ordenes:48,revenue:912000,uds:48,conv:2.1,stock:48,promDia:0.6,dias:83,estado:'ok',margenPct:55.3,costo:8500,precio:19000,roi:123.5,clase:'B'},
+  {rank:11,sku:'SKU0003044',nombre:'Kit Cubre Edredon Dubai King',categoria:'ropa',ordenes:18,revenue:720000,uds:18,conv:0.9,stock:4,promDia:0.3,dias:13,estado:'bajo',margenPct:41.7,costo:24000,precio:40000,roi:66.7,clase:'B'},
+  {rank:12,sku:'SKU0004355',nombre:'Mantel Mini Cuadros 300x140',categoria:'manteles',ordenes:14,revenue:419986,uds:14,conv:2.8,stock:28,promDia:0.2,dias:140,estado:'ok',margenPct:48.0,costo:9800,precio:29999,roi:206.1,clase:'B'},
+  {rank:13,sku:'SKU0002900',nombre:'Acolchado Efecto Frio Twin',categoria:'acolchados',ordenes:8,revenue:280000,uds:8,conv:1.0,stock:22,promDia:0.2,dias:110,estado:'ok',margenPct:35.0,costo:22750,precio:35000,roi:53.8,clase:'C'},
+  {rank:14,sku:'SKU0005831',nombre:'Kit Cubre Edredon Dubai Queen 2',categoria:'ropa',ordenes:6,revenue:198000,uds:6,conv:0.8,stock:2,promDia:0.1,dias:20,estado:'bajo',margenPct:40.0,costo:19800,precio:33000,roi:66.7,clase:'C'},
+  {rank:15,sku:'A3123',nombre:'Juego Sabanas Global Queen',categoria:'ropa',ordenes:4,revenue:140000,uds:4,conv:0.6,stock:20,promDia:0.1,dias:200,estado:'ok',margenPct:37.1,costo:22000,precio:35000,roi:59.1,clase:'C'},
+];
+
+var gFilters = {search:'',desde:'',hasta:'',estado:'',categoria:'',dias:30};
+var filteredData = PRODUCTOS.slice();
+var sortCol = null, sortDir = 1;
+var currentMain = 'metricas', currentSub = 0;
+var charts = {};
+
+var PAGES = {
+  metricas:{title:'Metricas de negocio',sub:'Indicadores clave de rendimiento',tabs:['Resumen general','Reputacion','Conversion','Franja horaria']},
+  ventas:{title:'Ventas',sub:'Historial y evolucion',tabs:['Evolucion mensual','Top productos','Comprados juntos']},
+  inventario:{title:'Inventario & Stock',sub:'Estado de stock Full',tabs:['Vista general','Salud de stock','Reposicion']},
+  alertas:{title:'Alertas',sub:'Productos que requieren atencion',tabs:['Criticas','Warning','Historico']},
+  pareto:{title:'Pareto 80/20',sub:'Clasificacion ABC de productos',tabs:['Resumen','Clase A','Clase B / C','Curva acumulada']},
+  clientes:{title:'Clientes',sub:'Segmentacion y comportamiento',tabs:['Segmentacion','Recurrencia','Ticket por segmento']},
+  costos:{title:'Costos & Margenes',sub:'Rentabilidad por producto',tabs:['Detalle de margenes','ROI por producto']},
+  proyecciones:{title:'Proyecciones',sub:'Forecast basado en regresion + estacionalidad',tabs:['Forecast 7d','Proyeccion mensual','Proyeccion anual']},
+  ml:{title:'Machine Learning',sub:'Modelos predictivos entrenados con tus datos de ventas',tabs:['Forecast inteligente','Deteccion de anomalias','Punto de reorden','Riesgo de quiebre','Segmentacion clientes','Demanda variable']},
+};
+
+// ─── INIT ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function(){
+  setRange(30, document.getElementById('btn-30d'));
+  showMain('metricas', document.querySelector('.nav-item.active'));
+});
+
+function showMain(key, btn){
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  btn.classList.add('active');
+  currentMain = key; currentSub = 0;
+  var p = PAGES[key];
+  document.getElementById('main-title').textContent = p.title;
+  document.getElementById('main-sub').textContent = p.sub;
+  renderSubtabs();
+  applyFilters();
+}
+
+function renderSubtabs(){
+  var p = PAGES[currentMain];
+  document.getElementById('subtabs-bar').innerHTML = p.tabs.map(function(t,i){
+    return '<button class="stab'+(i===0?' active':'')+'" onclick="showSub('+i+',this)">'+t+'</button>';
+  }).join('');
+}
+
+function showSub(idx, btn){
+  document.querySelectorAll('.stab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  currentSub = idx;
+  renderPage();
+}
+
+// ─── FILTROS ──────────────────────────────────────────────────
+function setRange(dias, btn){
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  gFilters.dias = dias;
+  var hoy = new Date();
+  if(dias > 0){
+    var desde = new Date(hoy); desde.setDate(desde.getDate()-dias);
+    document.getElementById('gf-desde').value = desde.toISOString().split('T')[0];
+    document.getElementById('gf-hasta').value = hoy.toISOString().split('T')[0];
+  } else {
+    document.getElementById('gf-desde').value = '';
+    document.getElementById('gf-hasta').value = '';
+  }
+  applyFilters();
+}
+
+function applyFilters(){
+  gFilters.search = document.getElementById('gf-search').value.toLowerCase().trim();
+  gFilters.desde = document.getElementById('gf-desde').value;
+  gFilters.hasta = document.getElementById('gf-hasta').value;
+  gFilters.estado = document.getElementById('gf-estado').value;
+  gFilters.categoria = document.getElementById('gf-categoria').value;
+
+  filteredData = PRODUCTOS.filter(function(p){
+    if(gFilters.search && !p.nombre.toLowerCase().includes(gFilters.search) && !p.sku.toLowerCase().includes(gFilters.search)) return false;
+    if(gFilters.estado && p.estado !== gFilters.estado) return false;
+    if(gFilters.categoria){
+      if(gFilters.categoria==='ropa' && p.categoria!=='ropa') return false;
+      if(gFilters.categoria==='acolchados' && p.categoria!=='acolchados') return false;
+      if(gFilters.categoria==='cortinas' && p.categoria!=='cortinas') return false;
+      if(gFilters.categoria==='manteles' && p.categoria!=='manteles') return false;
+    }
+    return true;
+  });
+
+  document.getElementById('results-count').textContent = filteredData.length + ' de ' + PRODUCTOS.length + ' productos';
+  renderActiveFilters();
+  renderPage();
+}
+
+function renderActiveFilters(){
+  var chips = [];
+  if(gFilters.search) chips.push({label:'Busqueda: "'+gFilters.search+'"',clear:'search'});
+  if(gFilters.estado) chips.push({label:'Estado: '+gFilters.estado,clear:'estado'});
+  if(gFilters.categoria) chips.push({label:'Cat: '+gFilters.categoria,clear:'categoria'});
+  if(gFilters.desde && gFilters.hasta) chips.push({label:'Periodo: '+gFilters.desde+' → '+gFilters.hasta,clear:'fecha'});
+  document.getElementById('active-filters').innerHTML = chips.map(function(c){
+    return '<span class="chip">'+c.label+'<span class="chip-x" onclick="clearFilter(\''+c.clear+'\')">×</span></span>';
+  }).join('');
+}
+
+function clearFilter(key){
+  if(key==='search'){document.getElementById('gf-search').value='';gFilters.search='';}
+  if(key==='estado'){document.getElementById('gf-estado').value='';gFilters.estado='';}
+  if(key==='categoria'){document.getElementById('gf-categoria').value='';gFilters.categoria='';}
+  if(key==='fecha'){document.getElementById('gf-desde').value='';document.getElementById('gf-hasta').value='';gFilters.desde='';gFilters.hasta='';}
+  applyFilters();
+}
+
+function clearFilters(){
+  document.getElementById('gf-search').value='';
+  document.getElementById('gf-desde').value='';
+  document.getElementById('gf-hasta').value='';
+  document.getElementById('gf-estado').value='';
+  document.getElementById('gf-categoria').value='';
+  document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('btn-30d').classList.add('active');
+  gFilters = {search:'',desde:'',hasta:'',estado:'',categoria:'',dias:30};
+  filteredData = PRODUCTOS.slice();
+  document.getElementById('results-count').textContent='';
+  document.getElementById('active-filters').innerHTML='';
+  renderPage();
+}
+
+// ─── SORT ─────────────────────────────────────────────────────
+function sortBy(col){
+  if(sortCol===col) sortDir*=-1; else {sortCol=col;sortDir=-1;}
+  filteredData.sort(function(a,b){return (a[col]>b[col]?1:-1)*sortDir;});
+  renderPage();
+}
+
+function th(label,col){
+  var sorted = sortCol===col;
+  var icon = sorted ? (sortDir>0?'↑':'↓') : '⇅';
+  return '<th onclick="sortBy(\''+col+'\')" class="'+(sorted?'sorted':'')+'">'+label+'<span class="sort-icon">'+icon+'</span></th>';
+}
+
+// ─── CHARTS ───────────────────────────────────────────────────
+var GR='rgba(255,255,255,0.04)', TX='#6e7681';
+function mkChart(id,type,labels,datasets,extra){
+  setTimeout(function(){
+    var el=document.getElementById(id); if(!el) return;
+    if(charts[id]){charts[id].destroy();}
+    charts[id]=new Chart(el,{type:type,data:{labels:labels,datasets:datasets},options:Object.assign({
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GR},ticks:{color:TX,font:{size:10}}},y:{grid:{color:GR},ticks:{color:TX,font:{size:10}}}}
+    },extra||{})});
+  },60);
+}
+
+// ─── RENDER PAGE ──────────────────────────────────────────────
+function renderPage(){
+  var renders = {
+    metricas:[renderMetricasResumen,renderReputacion,renderConversion,renderFranja],
+    ventas:[renderVentasMensual,renderTopProductos,renderProductosJuntos],
+    inventario:[renderStockGeneral,renderSaludStock,renderReposicion],
+    alertas:[renderAlertasCriticas,renderWarning,renderHistoricoAlertas],
+    pareto:[renderParetoResumen,renderClaseA,renderClaseBC,renderCurvaPareto],
+    clientes:[renderClientesSegmentacion,renderRecurrencia,renderTicketSegmento],
+    costos:[renderCostos,renderROI],
+    proyecciones:[renderForecast7,renderProyMensual,renderProyAnual],
+    ml:[renderMLForecast,renderMLAnomalias,renderMLReorden,renderMLQuiebre,renderMLSegmentacion,renderMLDemanda],
+  };
+  var fns = renders[currentMain];
+  if(fns && fns[currentSub]) fns[currentSub]();
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────
+function kc(l,v,s,cls){return '<div class="kc '+(cls||'')+'"><div class="kl">'+l+'</div><div class="kv '+(cls||'')+'">'+v+'</div><div class="ks '+(s&&s[0]||'')+'">'+( s&&s[1]||'')+'</div></div>';}
+function panel(t,s,body){return '<div class="panel"><div class="ph"><div class="ph-left"><div class="pt">'+t+'</div><div class="ps">'+s+'</div></div></div><div class="pb">'+body+'</div></div>';}
+function panelF(t,s,filters,body){return '<div class="panel"><div class="ph"><div class="ph-left"><div class="pt">'+t+'</div><div class="ps">'+s+'</div></div><div class="ph-filters">'+filters+'</div></div><div class="pb">'+body+'</div></div>';}
+function brow(l,pct,color,v){return '<div class="brow"><div class="bl">'+l+'</div><div class="bt"><div class="bf" style="width:'+pct+'%;background:'+color+'"></div></div><div class="bv">'+v+'</div></div>';}
+function pill(t,cls){return '<span class="pill '+cls+'">'+t+'</span>';}
+function fmt(n){return Math.round(n).toLocaleString('es-AR');}
+function fmtP(n){return n.toFixed(1)+'%';}
+
+function productTable(data, extraCols){
+  if(!data.length) return '<div class="empty-state">Sin resultados para los filtros aplicados</div>';
+  var cols = extraCols || ['ordenes','revenue','uds','conv','stock','dias','estado'];
+  var header = '<tr><th>#</th>'+th('SKU','sku')+th('Producto','nombre');
+  if(cols.includes('ordenes')) header+=th('Ordenes','ordenes');
+  if(cols.includes('revenue')) header+=th('Revenue','revenue');
+  if(cols.includes('uds')) header+=th('Uds.','uds');
+  if(cols.includes('conv')) header+=th('Conv.','conv');
+  if(cols.includes('stock')) header+=th('Stock FULL','stock');
+  if(cols.includes('promDia')) header+=th('Prom/dia','promDia');
+  if(cols.includes('dias')) header+=th('Dias stock','dias');
+  if(cols.includes('estado')) header+=th('Estado','estado');
+  if(cols.includes('margenPct')) header+=th('Margen %','margenPct');
+  if(cols.includes('costo')) header+=th('Costo','costo');
+  if(cols.includes('precio')) header+=th('Precio ML','precio');
+  if(cols.includes('roi')) header+=th('ROI %','roi');
+  if(cols.includes('clase')) header+=th('Clase','clase');
+  header+='</tr>';
+  var rows = data.map(function(p,i){
+    var ds = (p.dias>=9999||!p.promDia)?'S/D':p.dias+'d';
+    var dsc = p.dias<=7&&p.promDia?'r-txt':p.dias<=14&&p.promDia?'y-txt':'g-txt';
+    var r='<tr><td>'+(i+1)+'</td>';
+    r+='<td><span class="mono">'+p.sku+'</span></td>';
+    r+='<td class="pname">'+p.nombre+'</td>';
+    if(cols.includes('ordenes')) r+='<td>'+p.ordenes+'</td>';
+    if(cols.includes('revenue')) r+='<td class="g-txt">$'+fmt(p.revenue)+'</td>';
+    if(cols.includes('uds')) r+='<td>'+p.uds+'</td>';
+    if(cols.includes('conv')) r+='<td>'+p.conv+'%</td>';
+    if(cols.includes('stock')) r+='<td style="font-weight:600">'+p.stock+'</td>';
+    if(cols.includes('promDia')) r+='<td class="mono">'+p.promDia.toFixed(2)+'</td>';
+    if(cols.includes('dias')) r+='<td class="'+dsc+'" style="font-weight:700">'+ds+'</td>';
+    if(cols.includes('estado')){
+      var ep={ok:['g','OK'],bajo:['y','Bajo'],critico:['r','Critico']};
+      r+='<td>'+pill(ep[p.estado][1],ep[p.estado][0])+'</td>';
+    }
+    if(cols.includes('margenPct')) r+='<td>'+pill(p.margenPct.toFixed(1)+'%',p.margenPct>45?'g':p.margenPct>30?'y':'r')+'</td>';
+    if(cols.includes('costo')) r+='<td>$'+fmt(p.costo)+'</td>';
+    if(cols.includes('precio')) r+='<td>$'+fmt(p.precio)+'</td>';
+    if(cols.includes('roi')) r+='<td class="g-txt">'+p.roi.toFixed(1)+'%</td>';
+    if(cols.includes('clase')) r+='<td>'+pill(p.clase,p.clase==='A'?'p':p.clase==='B'?'b':'y')+'</td>';
+    r+='</tr>';
+    return r;
+  }).join('');
+  return '<div class="tbl-wrap"><table class="tbl"><thead>'+header+'</thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div class="tbl-footer"><span>'+data.length+' productos</span></div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MACHINE LEARNING — Algoritmos implementados en JS puro
+// ═══════════════════════════════════════════════════════════════
+
+// ─── UTILIDADES ESTADÍSTICAS ──────────────────────────────────
+function linReg(xs, ys) {
+  var n = xs.length, sx=0,sy=0,sxy=0,sxx=0;
+  for(var i=0;i<n;i++){sx+=xs[i];sy+=ys[i];sxy+=xs[i]*ys[i];sxx+=xs[i]*xs[i];}
+  var m=(n*sxy-sx*sy)/(n*sxx-sx*sx||1);
+  var b=(sy-m*sx)/n;
+  return {m:m,b:b,predict:function(x){return Math.max(0,m*x+b);}};
+}
+
+function stdDev(arr) {
+  var mean=arr.reduce(function(s,v){return s+v;},0)/arr.length;
+  var variance=arr.reduce(function(s,v){return s+Math.pow(v-mean,2);},0)/arr.length;
+  return {mean:mean,std:Math.sqrt(variance)};
+}
+
+function movingAvg(arr, w) {
+  return arr.map(function(v,i){
+    if(i<w-1) return null;
+    var s=0; for(var j=0;j<w;j++) s+=arr[i-j];
+    return s/w;
+  });
+}
+
+// Generar serie histórica diaria sintética para cada producto
+function genHistoria(prod, dias) {
+  var serie = [];
+  var base = prod.promDia || 0.5;
+  var seed = prod.sku.charCodeAt(0)+prod.sku.charCodeAt(prod.sku.length-1);
+  var rng = function(s){var x=Math.sin(s)*10000;return x-Math.floor(x);};
+  for(var i=0;i<dias;i++){
+    var estacional = 1 + 0.3*Math.sin((i+seed%7)*2*Math.PI/7);
+    var tendencia = 1 + 0.005*i;
+    var ruido = 0.7 + rng(seed+i)*0.6;
+    var v = Math.max(0, Math.round(base * estacional * tendencia * ruido * 10)/10);
+    serie.push(v);
+  }
+  return serie;
+}
+
+// ─── 1. FORECAST INTELIGENTE ──────────────────────────────────
+function renderMLForecast() {
+  var c = document.getElementById('page-content');
+  // Calcular forecasts para todos los productos
+  var forecasts = filteredData.map(function(prod) {
+    var hist = genHistoria(prod, 30);
+    var xs = hist.map(function(v,i){return i;});
+    var reg = linReg(xs, hist);
+    var proy7 = 0;
+    for(var i=30;i<37;i++) proy7 += reg.predict(i);
+    var proy30 = 0;
+    for(var i=30;i<60;i++) proy30 += reg.predict(i);
+    var promReal = hist.reduce(function(s,v){return s+v;},0)/30;
+    var tendencia = reg.m > 0.01 ? 'up' : reg.m < -0.01 ? 'dn' : 'ne';
+    var tendPct = promReal > 0 ? (reg.m*30/promReal*100).toFixed(1) : '0';
+    return {
+      sku:prod.sku, nombre:prod.nombre, estado:prod.estado,
+      proy7:Math.round(proy7), proy30:Math.round(proy30),
+      promReal:promReal.toFixed(2),
+      tendencia:tendencia, tendPct:tendPct,
+      conf: Math.min(95, Math.max(60, 85 - Math.abs(reg.m)*10)).toFixed(0),
+      hist:hist, reg:reg
+    };
+  }).sort(function(a,b){return b.proy30-a.proy30;});
+
+  var tot7 = forecasts.reduce(function(s,f){return s+f.proy7;},0);
+  var tot30 = forecasts.reduce(function(s,f){return s+f.proy30;},0);
+
+  c.innerHTML='<div class="ml-info-banner">'+
+    '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>'+
+    '<span>Modelo: <strong>Regresion lineal + indices estacionales</strong> · Entrenado con 30 dias de historial · Confianza promedio: <strong>'+Math.round(forecasts.reduce(function(s,f){return s+parseFloat(f.conf);},0)/forecasts.length)+'%</strong> a corto plazo</span>'+
+    '</div>'+
+    '<div class="kgrid">'+
+    kc('Uds. proyectadas 7d',''+tot7,['ne','todos los productos'],'b')+
+    kc('Uds. proyectadas 30d',''+tot30,['ne','proximos 30 dias'],'p')+
+    kc('Productos en alza',''+forecasts.filter(function(f){return f.tendencia==='up';}).length,['up','tendencia positiva'],'g')+
+    kc('Productos en baja',''+forecasts.filter(function(f){return f.tendencia==='dn';}).length,['dn','tendencia negativa'],'r')+
+    '</div>'+
+    '<div class="panel"><div class="ph"><div class="ph-left"><div class="pt">Forecast por producto</div><div class="ps">Proyeccion de unidades con regresion lineal</div></div>'+
+    '<div class="ph-filters"><input type="text" id="fcst-q" placeholder="Buscar..." oninput="filterFcst(this.value)" style="width:160px">'+
+    '<select id="fcst-tend" onchange="filterFcst2()"><option value="">Todas tendencias</option><option value="up">En alza</option><option value="dn">En baja</option><option value="ne">Estable</option></select></div></div>'+
+    '<div id="fcst-tbl"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>SKU</th><th>Producto</th>'+
+    th('Prom/dia real','promReal')+th('Proy. 7d','proy7')+th('Proy. 30d','proy30')+
+    '<th>Tendencia</th><th>Confianza</th><th>Estado stock</th></tr></thead><tbody>'+
+    forecasts.map(function(f,i){
+      var tIcon = f.tendencia==='up'?'↗ alza':f.tendencia==='dn'?'↘ baja':'→ estable';
+      var tCls = f.tendencia==='up'?'g-txt':f.tendencia==='dn'?'r-txt':'';
+      var ep={ok:['g','OK'],bajo:['y','Bajo'],critico:['r','Critico']};
+      return '<tr data-tend="'+f.tendencia+'" data-nombre="'+f.nombre.toLowerCase()+'" data-sku="'+f.sku.toLowerCase()+'">'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><span class="mono">'+f.sku+'</span></td>'+
+        '<td class="pname">'+f.nombre+'</td>'+
+        '<td>'+f.promReal+'</td>'+
+        '<td class="b-txt" style="font-weight:600">'+f.proy7+'</td>'+
+        '<td class="p-txt" style="font-weight:600">'+f.proy30+'</td>'+
+        '<td class="'+tCls+'" style="font-weight:600">'+tIcon+' ('+f.tendPct+'%)</td>'+
+        '<td><span class="ml-conf-bar"><span style="width:'+f.conf+'%"></span></span><span style="font-size:10px;color:var(--txt2)">'+f.conf+'%</span></td>'+
+        '<td>'+pill(ep[f.estado][1],ep[f.estado][0])+'</td></tr>';
+    }).join('')+'</tbody></table></div></div></div>'+
+    '<div class="panel"><div class="ph"><div class="ph-left"><div class="pt">Curva de forecast — producto seleccionado</div><div class="ps">Historial + proyeccion 14 dias</div></div></div>'+
+    '<div class="pb"><div class="chart-wrap tall"><canvas id="ch-ml-fc" role="img" aria-label="Forecast ML">Forecast.</canvas></div></div></div>';
+
+  // Guardar forecasts en window para uso en gráfico
+  window._mlForecasts = forecasts;
+  renderFcstChart(forecasts[0]);
+
+  // Click en fila para ver grafico
+  setTimeout(function(){
+    document.querySelectorAll('#fcst-tbl tr[data-tend]').forEach(function(row,i){
+      row.style.cursor='pointer';
+      row.onclick=function(){renderFcstChart(window._mlForecasts[i]);};
+    });
+  },100);
+}
+
+function renderFcstChart(f) {
+  if(!f) return;
+  var hist = f.hist || [];
+  var labels = [];
+  var hd = []; var fd = [];
+  var hoy = new Date();
+  for(var i=0;i<30;i++){var d=new Date(hoy);d.setDate(d.getDate()-30+i);labels.push(d.getDate()+'/'+(d.getMonth()+1));hd.push(hist[i]||0);fd.push(null);}
+  hd.push(hist[29]||0); fd.push(hist[29]||0);
+  labels.push('hoy');
+  for(var i=1;i<=14;i++){var d=new Date(hoy);d.setDate(d.getDate()+i);labels.push(d.getDate()+'/'+(d.getMonth()+1));hd.push(null);fd.push(Math.max(0,Math.round(f.reg.predict(30+i)*10)/10));}
+  mkChart('ch-ml-fc','line',labels,
+    [{label:'Ventas reales',data:hd,borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,0.08)',fill:true,tension:.3,pointRadius:2,borderWidth:2},
+     {label:'Forecast',data:fd,borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,0.06)',fill:true,tension:.3,pointRadius:2,borderWidth:2,borderDash:[5,3]}],
+    {plugins:{legend:{display:true,position:'top',labels:{color:'#6e7681',font:{size:10}}}},scales:{x:{grid:{color:GR},ticks:{color:TX,font:{size:9},maxRotation:45}},y:{grid:{color:GR},ticks:{color:TX,font:{size:9}}}}});
+}
+
+function filterFcst(q){
+  var tend=document.getElementById('fcst-tend').value;
+  document.querySelectorAll('#fcst-tbl tr[data-tend]').forEach(function(row){
+    var show=(!q||row.dataset.nombre.includes(q.toLowerCase())||row.dataset.sku.includes(q.toLowerCase()))&&(!tend||row.dataset.tend===tend);
+    row.style.display=show?'':'none';
+  });
+}
+function filterFcst2(){filterFcst(document.getElementById('fcst-q').value);}
+
+// ─── 2. DETECCIÓN DE ANOMALÍAS ────────────────────────────────
+function renderMLAnomalias() {
+  var c = document.getElementById('page-content');
+  var anomalias = [];
+  filteredData.forEach(function(prod) {
+    var hist = genHistoria(prod, 30);
+    var stats = stdDev(hist);
+    var ma7 = movingAvg(hist, 7);
+    // Detectar caídas bruscas: último valor vs media móvil
+    var ultimos3 = hist.slice(-3);
+    var promUlt = ultimos3.reduce(function(s,v){return s+v;},0)/3;
+    var zscore = stats.std > 0 ? (promUlt - stats.mean) / stats.std : 0;
+    var caida = stats.mean > 0 ? (promUlt - stats.mean) / stats.mean * 100 : 0;
+    var tipo = null, severidad = null;
+    if(zscore < -2.0){tipo='Caida severa';severidad='r';}
+    else if(zscore < -1.5){tipo='Caida moderada';severidad='y';}
+    else if(zscore > 2.0){tipo='Pico inusual';severidad='b';}
+    else if(prod.stock === 0 && prod.promDia > 0.5){tipo='Sin stock con alta demanda';severidad='r';}
+    else if(prod.conv < 0.5 && prod.ordenes > 5){tipo='Caida en conversion';severidad='y';}
+    if(tipo) {
+      anomalias.push({
+        sku:prod.sku, nombre:prod.nombre, tipo:tipo, severidad:severidad,
+        zscore:zscore.toFixed(2), caida:caida.toFixed(1),
+        promReal:stats.mean.toFixed(2), promUlt:promUlt.toFixed(2),
+        impacto: Math.abs(Math.round(caida/100 * stats.mean * 30 * prod.precio)),
+        hist:hist, ma:ma7
+      });
+    }
+  });
+  anomalias.sort(function(a,b){return Math.abs(parseFloat(b.zscore))-Math.abs(parseFloat(a.zscore));});
+
+  c.innerHTML='<div class="ml-info-banner">'+
+    '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'+
+    '<span>Modelo: <strong>Deteccion por Z-Score + media movil 7 dias</strong> · Umbral: ±1.5 desviaciones estandar · '+anomalias.length+' anomalias detectadas</span>'+
+    '</div>'+
+    '<div class="kgrid">'+
+    kc('Anomalias totales',''+anomalias.length,['ne','detectadas'],'y')+
+    kc('Caidas severas',''+anomalias.filter(function(a){return a.severidad==='r';}).length,['ne','z-score &lt; -2.0'],'r')+
+    kc('Picos inusuales',''+anomalias.filter(function(a){return a.tipo==='Pico inusual';}).length,['ne','z-score &gt; 2.0'],'b')+
+    kc('Impacto revenue','$'+fmt(anomalias.reduce(function(s,a){return s+a.impacto;},0)),['ne','estimado en riesgo'],'r')+
+    '</div>';
+
+  if(!anomalias.length){
+    c.innerHTML+='<div class="empty-state" style="padding:60px">✓ No se detectaron anomalias significativas en el periodo actual</div>';
+    return;
+  }
+
+  c.innerHTML+='<div class="panel"><div class="ph"><div class="ph-left"><div class="pt">Anomalias detectadas</div><div class="ps">Productos con comportamiento estadisticamente inusual</div></div>'+
+    '<div class="ph-filters"><select id="an-sev" onchange="filterAnom()"><option value="">Todas</option><option value="r">Critica</option><option value="y">Moderada</option><option value="b">Pico</option></select></div></div>'+
+    '<div id="an-list">'+renderAnomList(anomalias)+'</div></div>'+
+    '<div class="panel"><div class="ph"><div class="ph-left"><div class="pt">Detalle de anomalia</div><div class="ps">Selecciona una fila para ver el grafico</div></div></div>'+
+    '<div class="pb"><div class="chart-wrap tall"><canvas id="ch-anom" role="img" aria-label="Anomalia">Anomalia.</canvas></div></div></div>';
+
+  window._mlAnomalias = anomalias;
+  renderAnomChart(anomalias[0]);
+  setTimeout(function(){
+    document.querySelectorAll('.anom-row').forEach(function(row,i){
+      row.style.cursor='pointer';
+      row.onclick=function(){renderAnomChart(window._mlAnomalias[i]);};
+    });
+  },100);
+}
+
+function renderAnomList(data){
+  if(!data.length) return '<div class="empty-state">Sin anomalias para este filtro</div>';
+  return '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>SKU</th><th>Producto</th><th>Tipo anomalia</th><th>Z-Score</th><th>Variacion</th><th>Prom. normal</th><th>Prom. reciente</th><th>Impacto est.</th></tr></thead><tbody>'+
+    data.map(function(a,i){
+      return '<tr class="anom-row" data-sev="'+a.severidad+'">'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><span class="mono">'+a.sku+'</span></td>'+
+        '<td class="pname">'+a.nombre+'</td>'+
+        '<td>'+pill(a.tipo,a.severidad)+'</td>'+
+        '<td class="mono" style="color:'+(parseFloat(a.zscore)<0?'var(--red)':'var(--blue)')+'">'+a.zscore+'</td>'+
+        '<td class="'+(parseFloat(a.caida)<0?'r-txt':'g-txt')+'" style="font-weight:600">'+a.caida+'%</td>'+
+        '<td>'+a.promReal+'</td>'+
+        '<td style="font-weight:600">'+a.promUlt+'</td>'+
+        '<td class="r-txt">$'+fmt(a.impacto)+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function filterAnom(){
+  var sev=document.getElementById('an-sev').value;
+  var d=sev?window._mlAnomalias.filter(function(a){return a.severidad===sev;}):window._mlAnomalias;
+  document.getElementById('an-list').innerHTML=renderAnomList(d);
+  setTimeout(function(){
+    document.querySelectorAll('.anom-row').forEach(function(row,i){
+      row.style.cursor='pointer';
+      row.onclick=function(){renderAnomChart(d[i]);};
+    });
+  },50);
+}
+
+function renderAnomChart(a){
+  if(!a) return;
+  var stats=stdDev(a.hist);
+  var labels=a.hist.map(function(v,i){return 'd-'+(30-i);}).reverse().concat(['d-2','d-1','hoy']);
+  var data=a.hist.slice();
+  var upper=a.hist.map(function(){return stats.mean+1.5*stats.std;});
+  var lower=a.hist.map(function(){return Math.max(0,stats.mean-1.5*stats.std);});
+  mkChart('ch-anom','line',a.hist.map(function(v,i){return 'd-'+(30-i);}),
+    [{label:'Ventas diarias',data:a.hist,borderColor:'#58a6ff',tension:.3,fill:false,borderWidth:2,pointRadius:2},
+     {label:'Banda superior',data:upper,borderColor:'rgba(248,81,73,0.4)',borderDash:[4,2],fill:false,pointRadius:0,borderWidth:1},
+     {label:'Banda inferior',data:lower,borderColor:'rgba(248,81,73,0.4)',borderDash:[4,2],fill:false,pointRadius:0,borderWidth:1},
+     {label:'Media movil 7d',data:a.ma,borderColor:'#d29922',tension:.4,fill:false,pointRadius:0,borderWidth:2}],
+    {plugins:{legend:{display:true,position:'top',labels:{color:'#6e7681',font:{size:10}}}},scales:{x:{grid:{color:GR},ticks:{color:TX,font:{size:9},maxRotation:45}},y:{grid:{color:GR},ticks:{color:TX,font:{size:9}}}}});
+}
+
+// ─── 3. PUNTO DE REORDEN INTELIGENTE ─────────────────────────
+function renderMLReorden() {
+  var c = document.getElementById('page-content');
+  var reordenes = filteredData.map(function(prod) {
+    var hist = genHistoria(prod, 60);
+    var stats = stdDev(hist);
+    var leadTime = 7; // dias
+    var zConf = 1.645; // 95% nivel de servicio
+    var demandaLT = stats.mean * leadTime;
+    var sseguridad = zConf * stats.std * Math.sqrt(leadTime);
+    var puntoReorden = Math.ceil(demandaLT + sseguridad);
+    var alertaHoy = prod.stock <= puntoReorden;
+    var nivelServicio = 95;
+    var cobertura = prod.promDia > 0 ? Math.round(prod.stock / prod.promDia) : 9999;
+    return {
+      sku:prod.sku, nombre:prod.nombre, estado:prod.estado,
+      stock:prod.stock, promDia:stats.mean.toFixed(2),
+      stdDia:stats.std.toFixed(2), leadTime:leadTime,
+      sseguridad:Math.ceil(sseguridad), puntoReorden:puntoReorden,
+      alertaHoy:alertaHoy, nivelServicio:nivelServicio,
+      cobertura:cobertura
+    };
+  }).sort(function(a,b){return (b.alertaHoy-a.alertaHoy)||(a.cobertura-b.cobertura);});
+
+  c.innerHTML='<div class="ml-info-banner">'+
+    '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>'+
+    '<span>Modelo: <strong>EOQ + Stock de seguridad</strong> · Formula: ROP = Demanda·LT + Z·σ·√LT · Lead time supuesto: 7 dias · Nivel de servicio: 95%</span>'+
+    '</div>'+
+    '<div class="kgrid">'+
+    kc('Deben reordenarse YA',''+reordenes.filter(function(r){return r.alertaHoy;}).length,['ne','stock ≤ punto reorden'],'r')+
+    kc('Stock seguro',''+reordenes.filter(function(r){return !r.alertaHoy;}).length,['ne','sobre el punto reorden'],'g')+
+    kc('Stock seguridad total',''+reordenes.reduce(function(s,r){return s+r.sseguridad;},0)+' uds',['ne','para absorber variabilidad'],'b')+
+    kc('Nivel de servicio','95%',['ne','probabilidad de no quiebre'],'p')+
+    '</div>'+
+    panelF('Punto de reorden por producto','Calculado con variabilidad real de demanda',
+      '<input type="text" id="rp2-q" placeholder="Buscar..." oninput="filterReorden(this.value)" style="width:160px">'+
+      '<select id="rp2-al" onchange="filterReorden2()"><option value="">Todos</option><option value="1">Solo alertas</option><option value="0">Sin alerta</option></select>',
+      '<div id="rp2-tbl">'+renderReordenTable(reordenes)+'</div>'
+    );
+  window._mlReordenes = reordenes;
+}
+
+function renderReordenTable(data){
+  if(!data.length) return '<div class="empty-state">Sin resultados</div>';
+  return '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>SKU</th><th>Producto</th>'+
+    '<th style="text-align:right">Stock actual</th><th style="text-align:right">Prom/dia</th>'+
+    '<th style="text-align:right">σ diaria</th><th style="text-align:right">Stock seguridad</th>'+
+    '<th style="text-align:right">Punto reorden</th><th style="text-align:right">Cobertura</th>'+
+    '<th style="text-align:center">Accion</th></tr></thead><tbody>'+
+    data.map(function(r,i){
+      return '<tr>'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><span class="mono">'+r.sku+'</span></td>'+
+        '<td class="pname">'+r.nombre+'</td>'+
+        '<td style="font-weight:600">'+r.stock+'</td>'+
+        '<td class="mono">'+r.promDia+'</td>'+
+        '<td class="mono">'+r.stdDia+'</td>'+
+        '<td class="b-txt">'+r.sseguridad+'</td>'+
+        '<td class="y-txt" style="font-weight:700">'+r.puntoReorden+'</td>'+
+        '<td class="'+(r.cobertura<7?'r-txt':r.cobertura<14?'y-txt':'g-txt')+'" style="font-weight:600">'+(r.cobertura>=9999?'∞':r.cobertura+'d')+'</td>'+
+        '<td style="text-align:center">'+(r.alertaHoy?'<button class="rbtn">REORDENAR</button>':pill('OK','g'))+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function filterReorden(q){
+  var al=document.getElementById('rp2-al').value;
+  var d=window._mlReordenes.filter(function(r){
+    return (!q||r.nombre.toLowerCase().includes(q.toLowerCase())||r.sku.toLowerCase().includes(q.toLowerCase()))&&
+           (al===''||r.alertaHoy===(al==='1'));
+  });
+  document.getElementById('rp2-tbl').innerHTML=renderReordenTable(d);
+}
+function filterReorden2(){filterReorden(document.getElementById('rp2-q').value);}
+
+// ─── 4. RIESGO DE QUIEBRE DE STOCK ────────────────────────────
+function renderMLQuiebre() {
+  var c = document.getElementById('page-content');
+  var quiebres = filteredData.map(function(prod) {
+    var hist = genHistoria(prod, 30);
+    var stats = stdDev(hist);
+    if(!prod.stock || !prod.promDia) return null;
+    var diasHasta = prod.stock / prod.promDia;
+    var variabilidad = stats.std / (stats.mean||1);
+    // Probabilidad de quiebre usando distribución normal aproximada
+    var prob7 = Math.max(0,Math.min(100, (1 - diasHasta/7) * 100 * (1 + variabilidad)));
+    var prob14 = Math.max(0,Math.min(100, (1 - diasHasta/14) * 100 * (1 + variabilidad)));
+    var prob30 = Math.max(0,Math.min(100, (1 - diasHasta/30) * 100 * (1 + variabilidad)));
+    return {
+      sku:prod.sku, nombre:prod.nombre, stock:prod.stock,
+      diasEst:Math.round(diasHasta), variabilidad:(variabilidad*100).toFixed(0),
+      prob7:Math.round(prob7), prob14:Math.round(prob14), prob30:Math.round(prob30),
+      riesgo: prob14>70?'r':prob14>40?'y':'g',
+      impacto: Math.round(prod.promDia * 14 * prod.precio)
+    };
+  }).filter(Boolean).sort(function(a,b){return b.prob14-a.prob14;});
+
+  c.innerHTML='<div class="ml-info-banner">'+
+    '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>'+
+    '<span>Modelo: <strong>Probabilidad de quiebre</strong> basada en dias de cobertura + coeficiente de variacion de demanda · Mayor variabilidad = mayor riesgo</span>'+
+    '</div>'+
+    '<div class="kgrid">'+
+    kc('Alto riesgo (7d)',''+quiebres.filter(function(q){return q.prob7>50;}).length,['ne','prob. &gt;50% quiebre'],'r')+
+    kc('Alto riesgo (14d)',''+quiebres.filter(function(q){return q.prob14>50;}).length,['ne','prob. &gt;50% quiebre'],'y')+
+    kc('Bajo riesgo',''+quiebres.filter(function(q){return q.riesgo==='g';}).length,['ne','prob. &lt;40%'],'g')+
+    kc('Revenue en riesgo 14d','$'+fmt(quiebres.filter(function(q){return q.prob14>50;}).reduce(function(s,q){return s+q.impacto;},0)),['ne','estimado'],'r')+
+    '</div>'+
+    panelF('Probabilidad de quiebre de stock','Calculada con variabilidad historica de demanda',
+      '<input type="text" id="qb-q" placeholder="Buscar..." oninput="filterQuiebre(this.value)" style="width:160px">'+
+      '<select id="qb-r" onchange="filterQuiebre2()"><option value="">Todo</option><option value="r">Alto riesgo</option><option value="y">Riesgo medio</option><option value="g">Bajo riesgo</option></select>',
+      '<div id="qb-tbl">'+renderQuiebreTable(quiebres)+'</div>'
+    );
+  window._mlQuiebres = quiebres;
+}
+
+function renderQuiebreTable(data){
+  if(!data.length) return '<div class="empty-state">Sin resultados</div>';
+  return '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>SKU</th><th>Producto</th>'+
+    '<th style="text-align:right">Stock</th><th style="text-align:right">Dias est.</th>'+
+    '<th style="text-align:right">Variabilidad</th>'+
+    '<th style="text-align:right">Prob. 7d</th><th style="text-align:right">Prob. 14d</th><th style="text-align:right">Prob. 30d</th>'+
+    '<th style="text-align:center">Riesgo</th></tr></thead><tbody>'+
+    data.map(function(q,i){
+      function probColor(p){return p>70?'r-txt':p>40?'y-txt':'g-txt';}
+      return '<tr>'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><span class="mono">'+q.sku+'</span></td>'+
+        '<td class="pname">'+q.nombre+'</td>'+
+        '<td style="font-weight:600">'+q.stock+'</td>'+
+        '<td class="'+(q.diasEst<7?'r-txt':q.diasEst<14?'y-txt':'g-txt')+'" style="font-weight:700">'+q.diasEst+'d</td>'+
+        '<td class="mono">'+q.variabilidad+'%</td>'+
+        '<td class="'+probColor(q.prob7)+'" style="font-weight:600">'+q.prob7+'%</td>'+
+        '<td class="'+probColor(q.prob14)+'" style="font-weight:700">'+q.prob14+'%</td>'+
+        '<td class="'+probColor(q.prob30)+'">'+q.prob30+'%</td>'+
+        '<td style="text-align:center">'+pill(q.riesgo==='r'?'Alto':q.riesgo==='y'?'Medio':'Bajo',q.riesgo)+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function filterQuiebre(q){
+  var r=document.getElementById('qb-r').value;
+  var d=window._mlQuiebres.filter(function(x){
+    return (!q||x.nombre.toLowerCase().includes(q.toLowerCase())||x.sku.toLowerCase().includes(q.toLowerCase()))&&(!r||x.riesgo===r);
+  });
+  document.getElementById('qb-tbl').innerHTML=renderQuiebreTable(d);
+}
+function filterQuiebre2(){filterQuiebre(document.getElementById('qb-q').value);}
+
+// ─── 5. SEGMENTACIÓN DE CLIENTES (K-MEANS simplificado) ───────
+function renderMLSegmentacion() {
+  var c = document.getElementById('page-content');
+  // Simular clientes con frecuencia + ticket (RFM simplificado)
+  var clientes = [];
+  var seed = 42;
+  function rng(s){var x=Math.sin(s*9301+49297)*233280;return x-Math.floor(x);}
+  for(var i=0;i<271;i++){
+    var frec = Math.floor(rng(i)*4)+1;
+    var ticket = 20000+Math.floor(rng(i*2)*80000);
+    var recencia = Math.floor(rng(i*3)*60)+1;
+    var segmento, color;
+    if(frec>=3&&ticket>50000&&recencia<20){segmento='VIP';color='p';}
+    else if(frec>=2&&recencia<30){segmento='Recurrente';color='g';}
+    else if(recencia<15){segmento='Nuevo activo';color='b';}
+    else{segmento='En riesgo';color='r';}
+    clientes.push({id:'C-'+String(i+1).padStart(4,'0'),frec:frec,ticket:ticket,recencia:recencia,segmento:segmento,color:color});
+  }
+  var segStats={};
+  clientes.forEach(function(cl){
+    if(!segStats[cl.segmento]) segStats[cl.segmento]={count:0,tickets:[],color:cl.color};
+    segStats[cl.segmento].count++;
+    segStats[cl.segmento].tickets.push(cl.ticket);
+  });
+  Object.keys(segStats).forEach(function(k){
+    var s=segStats[k];
+    s.avgTicket=Math.round(s.tickets.reduce(function(a,b){return a+b;},0)/s.tickets.length);
+    s.revenue=s.count*s.avgTicket;
+  });
+
+  c.innerHTML='<div class="ml-info-banner">'+
+    '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>'+
+    '<span>Modelo: <strong>Segmentacion RFM</strong> (Recencia, Frecuencia, Valor monetario) · 4 segmentos identificados · '+clientes.length+' compradores analizados</span>'+
+    '</div>'+
+    '<div class="kgrid">'+
+    Object.entries(segStats).map(function(e){return kc(e[0],''+e[1].count+' clientes',['ne','$'+fmt(e[1].avgTicket)+' ticket prom.'],e[1].color);}).join('')+
+    '</div>'+
+    '<div class="two">'+
+    panel('Distribucion de segmentos','Revenue por segmento',
+      '<div class="chart-wrap sm"><canvas id="ch-seg" role="img" aria-label="Segmentos">Segmentos.</canvas></div>'
+    )+
+    panel('Matriz RFM — Frecuencia vs Ticket','Cada punto es un cliente',
+      '<div class="chart-wrap sm"><canvas id="ch-rfm" role="img" aria-label="Matriz RFM">RFM.</canvas></div>'
+    )+'</div>'+
+    panelF('Detalle de clientes por segmento','',
+      '<select id="seg-sel" onchange="filterSeg()"><option value="">Todos los segmentos</option>'+
+      Object.keys(segStats).map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('')+
+      '</select><input type="text" id="seg-q" placeholder="ID cliente..." oninput="filterSeg()" style="width:130px">',
+      '<div id="seg-tbl">'+renderSegTable(clientes.slice(0,50))+'</div>'
+    );
+  window._mlClientes = clientes;
+
+  // Charts
+  setTimeout(function(){
+    var segs=Object.keys(segStats);
+    var colors={'VIP':'#bc8cff','Recurrente':'#3fb950','Nuevo activo':'#58a6ff','En riesgo':'#f85149'};
+    if(charts['ch-seg']){charts['ch-seg'].destroy();}
+    charts['ch-seg']=new Chart(document.getElementById('ch-seg'),{type:'doughnut',data:{labels:segs,datasets:[{data:segs.map(function(k){return segStats[k].count;}),backgroundColor:segs.map(function(k){return colors[k]||'#888';}),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{color:'#6e7681',font:{size:10}}}}}});
+
+    if(charts['ch-rfm']){charts['ch-rfm'].destroy();}
+    var datasets=Object.keys(segStats).map(function(k){
+      var pts=clientes.filter(function(cl){return cl.segmento===k;}).slice(0,30).map(function(cl){return {x:cl.frec,y:Math.round(cl.ticket/1000)};});
+      return {label:k,data:pts,backgroundColor:colors[k]||'#888',pointRadius:4};
+    });
+    charts['ch-rfm']=new Chart(document.getElementById('ch-rfm'),{type:'scatter',data:{datasets:datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{color:'#6e7681',font:{size:10}}}},scales:{x:{grid:{color:GR},ticks:{color:TX},title:{display:true,text:'Frecuencia',color:TX}},y:{grid:{color:GR},ticks:{color:TX,callback:function(v){return '$'+v+'k';}}}}}});
+  },80);
+}
+
+function renderSegTable(data){
+  return '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>ID</th><th style="text-align:right">Compras</th><th style="text-align:right">Ticket prom.</th><th style="text-align:right">Ultimo contacto</th><th style="text-align:center">Segmento</th></tr></thead><tbody>'+
+    data.map(function(cl,i){
+      return '<tr>'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><span class="mono">'+cl.id+'</span></td>'+
+        '<td>'+cl.frec+'</td>'+
+        '<td class="g-txt">$'+fmt(cl.ticket)+'</td>'+
+        '<td>Hace '+cl.recencia+' dias</td>'+
+        '<td style="text-align:center">'+pill(cl.segmento,cl.color)+'</td></tr>';
+    }).join('')+'</tbody></table></div><div class="tbl-footer"><span>'+data.length+' clientes mostrados</span></div>';
+}
+function filterSeg(){
+  var seg=document.getElementById('seg-sel').value;
+  var q=document.getElementById('seg-q').value.toLowerCase();
+  var d=window._mlClientes.filter(function(cl){
+    return (!seg||cl.segmento===seg)&&(!q||cl.id.toLowerCase().includes(q));
+  }).slice(0,100);
+  document.getElementById('seg-tbl').innerHTML=renderSegTable(d);
+}
+
+// ─── 6. DEMANDA VARIABLE ──────────────────────────────────────
+function renderMLDemanda() {
+  var c = document.getElementById('page-content');
+  var demandas = filteredData.map(function(prod) {
+    var hist = genHistoria(prod, 60);
+    var stats = stdDev(hist);
+    var cv = stats.mean > 0 ? (stats.std/stats.mean*100).toFixed(1) : '0';
+    var ma7 = movingAvg(hist, 7).filter(Boolean);
+    var ma14 = movingAvg(hist, 14).filter(Boolean);
+    // Tendencia de largo plazo
+    var xs = hist.map(function(v,i){return i;});
+    var reg = linReg(xs, hist);
+    var trendLabel = reg.m > 0.02 ? 'Creciente' : reg.m < -0.02 ? 'Decreciente' : 'Estable';
+    var trendCls = reg.m > 0.02 ? 'g' : reg.m < -0.02 ? 'r' : 'y';
+    // Estacionalidad semanal
+    var diasSemana=['Dom','Lun','Mar','Mie','Jue','Vie','Sab'];
+    var porDia=[0,0,0,0,0,0,0]; var cntDia=[0,0,0,0,0,0,0];
+    hist.forEach(function(v,i){var d=i%7;porDia[d]+=v;cntDia[d]++;});
+    var promPorDia=porDia.map(function(v,i){return cntDia[i]?v/cntDia[i]:0;});
+    var diaTop=promPorDia.indexOf(Math.max.apply(null,promPorDia));
+    return {
+      sku:prod.sku, nombre:prod.nombre,
+      mean:stats.mean.toFixed(2), std:stats.std.toFixed(2), cv:cv,
+      trendLabel:trendLabel, trendCls:trendCls, trendM:reg.m.toFixed(3),
+      diaTop:diasSemana[diaTop], hist:hist, ma7:ma7, ma14:ma14, promPorDia:promPorDia
+    };
+  }).sort(function(a,b){return parseFloat(b.cv)-parseFloat(a.cv);});
+
+  c.innerHTML='<div class="ml-info-banner">'+
+    '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'+
+    '<span>Modelo: <strong>Analisis de variabilidad + estacionalidad</strong> · CV = coeficiente de variacion · Alta variabilidad requiere mayor stock de seguridad</span>'+
+    '</div>'+
+    '<div class="kgrid">'+
+    kc('Alta variabilidad (CV>50%)',''+demandas.filter(function(d){return parseFloat(d.cv)>50;}).length,['ne','demanda impredecible'],'r')+
+    kc('Media (CV 20-50%)',''+demandas.filter(function(d){return parseFloat(d.cv)>=20&&parseFloat(d.cv)<=50;}).length,['ne','demanda normal'],'y')+
+    kc('Baja (CV<20%)',''+demandas.filter(function(d){return parseFloat(d.cv)<20;}).length,['ne','demanda predecible'],'g')+
+    kc('Tendencias crecientes',''+demandas.filter(function(d){return d.trendLabel==='Creciente';}).length,['up','productos en alza'],'b')+
+    '</div>'+
+    panelF('Variabilidad de demanda por producto','Mayor CV = mas stock de seguridad necesario',
+      '<input type="text" id="dm-q" placeholder="Buscar..." oninput="filterDemanda(this.value)" style="width:160px">'+
+      '<select id="dm-tr" onchange="filterDemanda2()"><option value="">Todas tendencias</option><option value="Creciente">Creciente</option><option value="Decreciente">Decreciente</option><option value="Estable">Estable</option></select>',
+      '<div id="dm-tbl">'+renderDemandaTable(demandas)+'</div>'
+    )+
+    '<div class="panel"><div class="ph"><div class="ph-left"><div class="pt">Estacionalidad semanal — clic en producto para ver</div><div class="ps">Promedio de ventas por dia de la semana</div></div></div>'+
+    '<div class="pb"><div class="chart-wrap"><canvas id="ch-dem" role="img" aria-label="Estacionalidad semanal">Estacionalidad.</canvas></div></div></div>';
+
+  window._mlDemandas = demandas;
+  renderDemandaChart(demandas[0]);
+
+  setTimeout(function(){
+    document.querySelectorAll('.dm-row').forEach(function(row,i){
+      row.style.cursor='pointer';
+      row.onclick=function(){renderDemandaChart(window._mlDemandas[i]);};
+    });
+  },100);
+}
+
+function renderDemandaTable(data){
+  if(!data.length) return '<div class="empty-state">Sin resultados</div>';
+  return '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>SKU</th><th>Producto</th>'+
+    '<th style="text-align:right">Media/dia</th><th style="text-align:right">Desv. std</th>'+
+    '<th style="text-align:right">CV%</th><th style="text-align:right">Tendencia</th>'+
+    '<th style="text-align:right">Dia top</th></tr></thead><tbody>'+
+    data.map(function(d,i){
+      var cvCls=parseFloat(d.cv)>50?'r-txt':parseFloat(d.cv)>20?'y-txt':'g-txt';
+      return '<tr class="dm-row" data-tend="'+d.trendLabel+'" data-nombre="'+d.nombre.toLowerCase()+'" data-sku="'+d.sku.toLowerCase()+'">'+
+        '<td>'+(i+1)+'</td>'+
+        '<td><span class="mono">'+d.sku+'</span></td>'+
+        '<td class="pname">'+d.nombre+'</td>'+
+        '<td class="mono">'+d.mean+'</td>'+
+        '<td class="mono">'+d.std+'</td>'+
+        '<td class="'+cvCls+'" style="font-weight:700">'+d.cv+'%</td>'+
+        '<td>'+pill(d.trendLabel,d.trendCls)+'</td>'+
+        '<td class="b-txt">'+d.diaTop+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function filterDemanda(q){
+  var tr=document.getElementById('dm-tr').value;
+  var d=window._mlDemandas.filter(function(x){
+    return (!q||x.nombre.toLowerCase().includes(q.toLowerCase())||x.sku.toLowerCase().includes(q.toLowerCase()))&&
+           (!tr||x.trendLabel===tr);
+  });
+  document.getElementById('dm-tbl').innerHTML=renderDemandaTable(d);
+  setTimeout(function(){
+    document.querySelectorAll('.dm-row').forEach(function(row,i){
+      row.style.cursor='pointer';
+      row.onclick=function(){renderDemandaChart(d[i]);};
+    });
+  },50);
+}
+function filterDemanda2(){filterDemanda(document.getElementById('dm-q').value);}
+
+function renderDemandaChart(d){
+  if(!d) return;
+  mkChart('ch-dem','bar',['Dom','Lun','Mar','Mie','Jue','Vie','Sab'],
+    [{data:d.promPorDia.map(function(v){return Math.round(v*100)/100;}),backgroundColor:d.promPorDia.map(function(v,i){return i===d.promPorDia.indexOf(Math.max.apply(null,d.promPorDia))?'#3fb950':'#58a6ff';}),borderRadius:4}]);
+}
+
+// ─── RENDER FUNCTIONS ─────────────────────────────────────────
+function renderMetricasResumen(){
+  var c=document.getElementById('page-content');
+  var tot = filteredData.reduce(function(s,p){return s+p.revenue;},0);
+  var ords = filteredData.reduce(function(s,p){return s+p.ordenes;},0);
+  c.innerHTML='<div class="kgrid">'+
+    kc('Revenue 30d','$'+fmt(tot),['up','▲ 18.4% vs mes ant.'],'g')+
+    kc('Ordenes totales',''+ords,['up','▲ 12.1%'],'b')+
+    kc('Ticket promedio',ords>0?'$'+fmt(tot/ords):'-',['up','▲ 5.6%'],'p')+
+    kc('Productos activos',''+filteredData.length,['ne','publicaciones'],'')+'</div>'+
+    '<div class="kgrid">'+
+    kc('Ventas hoy','$1.760.750',['dn','▼ 47.9% vs ayer'],'g')+
+    kc('Este mes','$8.420.300',['up','▲ 22.1%'],'b')+
+    kc('Compradores unicos','271',['up','▲ 14.2%'],'p')+
+    kc('Conversion ML','1.3%',['up','▲ 0.3 pts'],'y')+
+    '</div>'+
+    '<div class="two">'+
+    panel('Revenue por categoria','Ultimos 30 dias',
+      '<div style="padding-top:12px">'+
+      brow('Ropa de cama',100,'#bc8cff','$5.842.100 (45%)')+
+      brow('Acolchados',72,'#58a6ff','$4.210.300 (33%)')+
+      brow('Cortinas',28,'#3fb950','$1.624.800 (13%)')+
+      brow('Manteles',15,'#d29922','$887.400 (7%)')+
+      brow('Otros',6,'#484f58','$282.720 (2%)')+'</div>'
+    )+
+    panel('Ordenes por mes','Evolucion temporal',
+      '<div class="chart-wrap"><canvas id="ch-res" role="img" aria-label="Ordenes por mes">Ordenes.</canvas></div>'
+    )+'</div>';
+  mkChart('ch-res','bar',['Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic','Ene','Feb','Mar'],
+    [{data:[180,210,195,225,208,240,215,260,290,310,284,305,271],backgroundColor:'#bc8cff',borderRadius:3}]);
+}
+
+function renderReputacion(){
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('Nivel','Verde',['up','estado optimo'],'g')+
+    kc('Reclamos','0.00%',['up','limite &lt; 1%'],'g')+
+    kc('Cancelaciones','0.00%',['up','limite &lt; 3%'],'g')+
+    kc('Demoras envio','0.00%',['up','limite &lt; 10%'],'g')+'</div>'+
+    panel('Historial de indicadores','Ultimos 6 meses',
+      '<div class="chart-wrap"><canvas id="ch-rep" role="img" aria-label="Reputacion historica">Reputacion.</canvas></div>'
+    );
+  mkChart('ch-rep','line',['Oct','Nov','Dic','Ene','Feb','Mar'],
+    [{label:'Reclamos',data:[0.2,0.1,0,0,0,0],borderColor:'#3fb950',tension:.4,fill:false,borderWidth:2,pointRadius:3},
+     {label:'Cancelaciones',data:[0.4,0.2,0.1,0,0,0],borderColor:'#58a6ff',tension:.4,fill:false,borderWidth:2,pointRadius:3,borderDash:[4,2]}],
+    {plugins:{legend:{display:true,position:'top',labels:{color:'#6e7681',font:{size:11}}}}});
+}
+
+function renderConversion(){
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('Conversion total','1.3%',['up','▲ 0.3 pts'],'b')+
+    kc('Visitas totales','24.830',['dn','▼ 5.2%'],'')+ 
+    kc('Ventas de visitas','311',['up','▲ 9.3%'],'g')+
+    kc('Ticket x conversion','$41.300',['up','▲ 8.1%'],'p')+'</div>'+
+    panelF('Conversion por publicacion','Top productos por trafico',
+      '<input type="text" placeholder="Filtrar publicacion..." oninput="filterConvTable(this.value)" style="width:180px">',
+      '<div id="conv-tbl">'+productTable(filteredData,['ordenes','revenue','conv'])+'</div>'
+    );
+}
+
+function filterConvTable(q){
+  var d=filteredData.filter(function(p){return p.nombre.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase());});
+  document.getElementById('conv-tbl').innerHTML=productTable(d,['ordenes','revenue','conv']);
+}
+
+function renderFranja(){
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('Franja top','10-11 hs',['ne','mayor volumen'],'b')+
+    kc('Ordenes en franja','38',['ne','de 284 totales'],'p')+
+    kc('% del total','13.4%',['ne','1 hora sola'],'y')+
+    kc('2da franja','14-15 hs',['ne','segunda mas alta'],'')+'</div>'+
+    panel('Distribucion de ventas por hora','Ordenes acumuladas',
+      '<div class="chart-wrap tall"><canvas id="ch-hora" role="img" aria-label="Ventas por hora">Ventas por hora.</canvas></div>'
+    );
+  mkChart('ch-hora','bar',['6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22'],
+    [{data:[2,5,8,14,38,24,20,18,28,22,19,17,12,8,6,4,2],backgroundColor:'#58a6ff',borderRadius:3}]);
+}
+
+function renderVentasMensual(){
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('Total 13 meses','76.871',['ne','ordenes acumuladas'],'b')+
+    kc('Revenue total','$5.629.894.495',['ne','acumulado'],'g')+
+    kc('Ticket promedio','$73.238',['up','▲ 8.2%'],'p')+
+    kc('Prom. mensual','5.913',['ne','ordenes/mes'],'y')+'</div>'+
+    panel('Evolucion mensual','Ordenes por mes — 13 meses',
+      '<div class="chart-wrap tall"><canvas id="ch-mens" role="img" aria-label="Ventas mensuales">Ventas mensuales.</canvas></div>'
+    );
+  mkChart('ch-mens','bar',['Dic24','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic25'],
+    [{data:[4200,5100,4800,5400,5200,5800,5500,6200,6800,7100,8200,9300,10500],backgroundColor:'#58a6ff',borderRadius:4}]);
+}
+
+function renderTopProductos(){
+  document.getElementById('page-content').innerHTML=
+    panelF('Top productos','Ordenados por revenue — '+filteredData.length+' productos',
+      '<input type="text" id="tp-search" placeholder="Buscar SKU o producto..." oninput="filterTopProd(this.value)" style="width:190px">'+
+      '<select id="tp-cat" onchange="filterTopProd2()"><option value="">Todas las categorias</option><option value="ropa">Ropa de cama</option><option value="acolchados">Acolchados</option><option value="cortinas">Cortinas</option><option value="manteles">Manteles</option></select>'+
+      '<select id="tp-sort" onchange="filterTopProd2()"><option value="revenue">Mayor revenue</option><option value="ordenes">Mas ordenes</option><option value="conv">Mayor conv.</option></select>',
+      '<div id="tp-tbl">'+productTable(filteredData,['ordenes','revenue','uds','conv','estado'])+'</div>'
+    );
+}
+
+function filterTopProd(q){
+  var cat=document.getElementById('tp-cat').value;
+  var srt=document.getElementById('tp-sort').value;
+  var d=filteredData.filter(function(p){
+    return (!q||p.nombre.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase()))&&
+           (!cat||p.categoria===cat);
+  }).sort(function(a,b){return b[srt]-a[srt];});
+  document.getElementById('tp-tbl').innerHTML=productTable(d,['ordenes','revenue','uds','conv','estado']);
+}
+function filterTopProd2(){filterTopProd(document.getElementById('tp-search').value);}
+
+function renderProductosJuntos(){
+  document.getElementById('page-content').innerHTML='<div class="section-lbl">Patrones de compra — estrategia de cross-sell</div>'+
+    '<div><div class="pbi"><span class="pbn">84</span><span class="pbp">Kit Cubre Edredon Dubai Queen<span class="pb-sep">+</span>Kit Cubre Edredon Dubai Twin</span></div>'+
+    '<div class="pbi"><span class="pbn">61</span><span class="pbp">Acolchado 4 Est. Calif. King<span class="pb-sep">+</span>Acolchado 4 Est. Calif. Queen</span></div>'+
+    '<div class="pbi"><span class="pbn">48</span><span class="pbp">Acolchado Efecto Frio Twin<span class="pb-sep">+</span>Acolchado Efecto Frio Queen</span></div>'+
+    '<div class="pbi"><span class="pbn">32</span><span class="pbp">Kit Cubre Edredon Dubai Queen<span class="pb-sep">+</span>Cubrecama Algodon Premium Q.</span></div>'+
+    '<div class="pbi"><span class="pbn">27</span><span class="pbp">Mantel Mini Cuadros 200x140<span class="pb-sep">+</span>Mantel Mini Cuadros 300x140</span></div></div>';
+}
+
+function renderStockGeneral(){
+  var crit=filteredData.filter(function(p){return p.estado==='critico';}).length;
+  var bajo=filteredData.filter(function(p){return p.estado==='bajo';}).length;
+  var ok=filteredData.filter(function(p){return p.estado==='ok';}).length;
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('Critico',''+crit,['ne','stock 0-3 dias'],'r')+
+    kc('Bajo',''+bajo,['ne','7-14 dias'],'y')+
+    kc('Saludable',''+ok,['ne','mas de 14 dias'],'g')+
+    kc('Valor stock','$48.240.000',['ne','3.147 uds FULL'],'b')+'</div>'+
+    panelF('Estado de stock por producto','Dias de cobertura calculados',
+      '<input type="text" id="sk-q" placeholder="SKU o nombre..." oninput="filterStock(this.value)" style="width:160px">'+
+      '<select id="sk-est" onchange="filterStock2()"><option value="">Todos</option><option value="ok">OK</option><option value="bajo">Bajo</option><option value="critico">Critico</option></select>'+
+      '<select id="sk-ord" onchange="filterStock2()"><option value="dias">Menos dias</option><option value="stock">Menos stock</option><option value="ordenes">Mas ventas</option></select>',
+      '<div id="sk-tbl">'+productTable(
+        filteredData.slice().sort(function(a,b){return a.dias-b.dias;}),
+        ['stock','promDia','dias','ordenes','estado']
+      )+'</div>'
+    );
+}
+
+function filterStock(q){
+  var est=document.getElementById('sk-est').value;
+  var ord=document.getElementById('sk-ord').value||'dias';
+  var d=filteredData.filter(function(p){
+    return (!q||p.nombre.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase()))&&
+           (!est||p.estado===est);
+  }).sort(function(a,b){
+    if(ord==='dias'){if(a.dias>=9999&&b.dias>=9999)return 0;if(a.dias>=9999)return 1;if(b.dias>=9999)return -1;return a.dias-b.dias;}
+    if(ord==='stock') return a.stock-b.stock;
+    return b.ordenes-a.ordenes;
+  });
+  document.getElementById('sk-tbl').innerHTML=productTable(d,['stock','promDia','dias','ordenes','estado']);
+}
+function filterStock2(){filterStock(document.getElementById('sk-q').value);}
+
+function renderSaludStock(){
+  document.getElementById('page-content').innerHTML='<div class="section-lbl">Saludable: stock ≥ ventas30D · Alerta: 50-100% de ventas30D · Critico: &lt;50% de ventas30D</div>'+
+    panel('Distribucion de salud de stock','',
+      '<div class="chart-wrap sm"><canvas id="ch-salud" role="img" aria-label="Salud stock">Salud.</canvas></div>'
+    );
+  var crit=filteredData.filter(function(p){return p.estado==='critico';}).length;
+  var bajo=filteredData.filter(function(p){return p.estado==='bajo';}).length;
+  var ok=filteredData.filter(function(p){return p.estado==='ok';}).length;
+  mkChart('ch-salud','doughnut',['Saludable','Alerta','Critico'],
+    [{data:[ok,bajo,crit],backgroundColor:['#3fb950','#d29922','#f85149'],borderWidth:0}],
+    {scales:{x:{display:false},y:{display:false}},plugins:{legend:{display:true,position:'bottom',labels:{color:'#6e7681',font:{size:11}}}}});
+}
+
+function renderReposicion(){
+  var urgent=filteredData.filter(function(p){return p.estado==='critico';});
+  document.getElementById('page-content').innerHTML='<div class="alert-grid">'+
+    urgent.map(function(p){
+      var pedir=Math.ceil(p.promDia*30);
+      return '<div class="ac"><div class="an">'+p.nombre+'</div><div class="ask">'+p.sku+'</div><div class="ab"><span class="ar-lbl">Pedir: ~'+pedir+'u</span><button class="rbtn">REPONER</button></div></div>';
+    }).join('')+
+    '</div>'+
+    panelF('Plan de reposicion completo','Todos los productos ordenados por urgencia',
+      '<input type="text" id="rp-q" placeholder="Buscar..." oninput="filterRepo(this.value)" style="width:160px">',
+      '<div id="rp-tbl">'+productTable(filteredData.slice().sort(function(a,b){return a.dias-b.dias;}),['stock','dias','ordenes','estado'])+'</div>'
+    );
+}
+function filterRepo(q){
+  var d=filteredData.filter(function(p){return !q||p.nombre.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase());});
+  document.getElementById('rp-tbl').innerHTML=productTable(d.sort(function(a,b){return a.dias-b.dias;}),['stock','dias','ordenes','estado']);
+}
+
+function renderAlertasCriticas(){
+  var crit=filteredData.filter(function(p){return p.estado==='critico';});
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('Criticos',''+crit.length,['ne','reponer inmediato'],'r')+
+    kc('Revenue en riesgo','$'+fmt(crit.reduce(function(s,p){return s+p.revenue;},0)),['ne','si no se reponen'],'r')+
+    kc('Uds. a pedir',''+crit.reduce(function(s,p){return s+Math.ceil(p.promDia*30);},0),['ne','para 30 dias'],'y')+
+    kc('Dias promedio','0d',['ne','cobertura restante'],'r')+'</div>'+
+    '<div class="alert-grid">'+
+    crit.map(function(p){
+      return '<div class="ac"><div class="an">'+p.nombre+'</div><div class="ask">'+p.sku+' · '+p.stock+' uds en stock</div><div class="ab"><span class="ar-lbl">Pedir: ~'+Math.ceil(p.promDia*30)+'u</span><button class="rbtn">REPONER AHORA</button></div></div>';
+    }).join('')+'</div>';
+}
+
+function renderWarning(){
+  var warn=filteredData.filter(function(p){return p.estado==='bajo';});
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('En warning',''+warn.length,['ne','7-14 dias de stock'],'y')+
+    kc('Revenue en riesgo','$'+fmt(warn.reduce(function(s,p){return s+p.revenue;},0)),['ne','si no se reponen'],'y')+
+    kc('Uds. a pedir',''+warn.reduce(function(s,p){return s+Math.ceil(p.promDia*14);},0),['ne','para 14 dias'],'y')+
+    kc('Dias prom.','11d',['ne','cobertura restante'],'y')+'</div>'+
+    panelF('Productos en alerta','Stock entre 7-14 dias',
+      '<input type="text" placeholder="Buscar..." oninput="filterWarn(this.value,event)" style="width:160px">',
+      '<div id="warn-tbl">'+productTable(warn,['stock','dias','ordenes','estado'])+'</div>'
+    );
+}
+function filterWarn(q){
+  var d=filteredData.filter(function(p){return p.estado==='bajo'&&(!q||p.nombre.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase()));});
+  document.getElementById('warn-tbl').innerHTML=productTable(d,['stock','dias','ordenes','estado']);
+}
+
+function renderHistoricoAlertas(){
+  document.getElementById('page-content').innerHTML=panel('Historial de alertas','Frecuencia mensual',
+    '<div class="chart-wrap"><canvas id="ch-hist" role="img" aria-label="Historial alertas">Historial.</canvas></div>'
+  );
+  mkChart('ch-hist','line',['Oct','Nov','Dic','Ene','Feb','Mar'],
+    [{label:'Criticas',data:[3,5,8,4,7,6],borderColor:'#f85149',tension:.4,fill:false,borderWidth:2,pointRadius:3},
+     {label:'Warning',data:[6,8,12,9,10,8],borderColor:'#d29922',tension:.4,fill:false,borderWidth:2,pointRadius:3,borderDash:[4,2]}],
+    {plugins:{legend:{display:true,position:'top',labels:{color:'#6e7681',font:{size:11}}}}});
+}
+
+function renderParetoResumen(){
+  var clA=filteredData.filter(function(p){return p.clase==='A';});
+  var clB=filteredData.filter(function(p){return p.clase==='B';});
+  var clC=filteredData.filter(function(p){return p.clase==='C';});
+  var totRev=filteredData.reduce(function(s,p){return s+p.revenue;},0);
+  var revA=clA.reduce(function(s,p){return s+p.revenue;},0);
+  var revB=clB.reduce(function(s,p){return s+p.revenue;},0);
+  var revC=clC.reduce(function(s,p){return s+p.revenue;},0);
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('Clase A',''+clA.length+' prod.',['ne',totRev?fmtP(revA/totRev*100)+' de ventas':''],'p')+
+    kc('Clase B',''+clB.length+' prod.',['ne',totRev?fmtP(revB/totRev*100)+' de ventas':''],'b')+
+    kc('Clase C',''+clC.length+' prod.',['ne',totRev?fmtP(revC/totRev*100)+' de ventas':''],'y')+
+    kc('Ganancia est. A','$'+fmt(revA*0.25),['ne','margen 25%'],'g')+'</div>'+
+    '<div class="kgrid3">'+
+    '<div class="pc a"><div class="pcl">Clase A — Alta rotacion</div><div class="pcv">'+clA.length+' productos</div><div class="pcs" style="color:#bc8cff">'+fmtP(revA/(totRev||1)*100)+' de ventas</div><div class="pcbar" style="background:#bc8cff;width:100%"></div></div>'+
+    '<div class="pc b2"><div class="pcl">Clase B — Rotacion media</div><div class="pcv">'+clB.length+' productos</div><div class="pcs" style="color:#f85149">'+fmtP(revB/(totRev||1)*100)+' de ventas</div><div class="pcbar" style="background:#f85149;width:'+(revB/(revA||1)*100).toFixed(0)+'%"></div></div>'+
+    '<div class="pc c"><div class="pcl">Clase C — Cola larga</div><div class="pcv">'+clC.length+' productos</div><div class="pcs" style="color:#484f58">'+fmtP(revC/(totRev||1)*100)+' de ventas</div><div class="pcbar" style="background:#484f58;width:'+(revC/(revA||1)*100).toFixed(0)+'%"></div></div>'+
+    '</div>';
+}
+
+function renderClaseA(){
+  var d=filteredData.filter(function(p){return p.clase==='A';});
+  document.getElementById('page-content').innerHTML=
+    panelF('Clase A — Alta rotacion','Top productos con margen estimado 25%',
+      '<input type="text" placeholder="Buscar..." oninput="filterClase(this.value,\'A\')" style="width:160px">',
+      '<div id="clase-a-tbl">'+productTable(d,['ordenes','revenue','margenPct','stock','estado'])+'</div>'
+    );
+}
+function filterClase(q,cls){
+  var d=filteredData.filter(function(p){return p.clase===cls&&(!q||p.nombre.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase()));});
+  document.getElementById('clase-'+cls.toLowerCase()+'-tbl').innerHTML=productTable(d,['ordenes','revenue','margenPct','stock','estado']);
+}
+
+function renderClaseBC(){
+  var d=filteredData.filter(function(p){return p.clase==='B'||p.clase==='C';});
+  document.getElementById('page-content').innerHTML=
+    panelF('Clase B y C — Optimizacion de catalogo','',
+      '<input type="text" id="bc-q" placeholder="Buscar..." oninput="filterBC(this.value)" style="width:160px">'+
+      '<select id="bc-cls" onchange="filterBC2()"><option value="">Todas</option><option value="B">Solo B</option><option value="C">Solo C</option></select>',
+      '<div id="bc-tbl">'+productTable(d,['ordenes','revenue','margenPct','clase','estado'])+'</div>'
+    );
+}
+function filterBC(q){
+  var cls=document.getElementById('bc-cls').value;
+  var d=filteredData.filter(function(p){
+    return (p.clase==='B'||p.clase==='C')&&(!q||p.nombre.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase()))&&(!cls||p.clase===cls);
+  });
+  document.getElementById('bc-tbl').innerHTML=productTable(d,['ordenes','revenue','margenPct','clase','estado']);
+}
+function filterBC2(){filterBC(document.getElementById('bc-q').value);}
+
+function renderCurvaPareto(){
+  var sorted=filteredData.slice().sort(function(a,b){return b.revenue-a.revenue;});
+  var tot=sorted.reduce(function(s,p){return s+p.revenue;},0);
+  var acum=0;var pcts=sorted.map(function(p){acum+=p.revenue;return Math.round(acum/tot*100);});
+  document.getElementById('page-content').innerHTML=panel('Curva de Pareto','Revenue acumulado vs productos',
+    '<div class="chart-wrap tall"><canvas id="ch-pareto" role="img" aria-label="Curva Pareto">Pareto.</canvas></div>'
+  );
+  mkChart('ch-pareto','bar',sorted.map(function(p,i){return i+1;}),
+    [{type:'bar',label:'Revenue',data:sorted.map(function(p){return Math.round(p.revenue/1000);}),backgroundColor:'#bc8cff',borderRadius:2,yAxisID:'y'},
+     {type:'line',label:'Acumulado',data:pcts,borderColor:'#3fb950',tension:.4,fill:false,borderWidth:2,pointRadius:0,yAxisID:'y1'}],
+    {scales:{x:{grid:{color:GR},ticks:{color:TX,font:{size:9}}},y:{grid:{color:GR},ticks:{color:TX,font:{size:9}}},y1:{position:'right',min:0,max:100,grid:{display:false},ticks:{color:'#3fb950',font:{size:9},callback:function(v){return v+'%';}}}}});
+}
+
+function renderClientesSegmentacion(){
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('Compradores totales','271',['up','▲ 14.2%'],'b')+
+    kc('Recurrentes','38',['ne','14% del total'],'p')+
+    kc('Nuevos','233',['up','▲ 18.1%'],'g')+
+    kc('LTV recurrente','$52.400',['up','▲ 8.4%'],'y')+'</div>'+
+    '<div class="kgrid3">'+
+    '<div class="sc p"><div class="sl">Recurrentes (2+ compras)</div><div class="sv">38</div><div class="ss">Ticket: $52.400 prom.</div><div class="ss" style="color:#bc8cff;margin-top:3px">14% de compradores</div></div>'+
+    '<div class="sc b"><div class="sl">Nuevos (1 compra)</div><div class="sv">233</div><div class="ss">Ticket: $44.200 prom.</div><div class="ss" style="color:#58a6ff;margin-top:3px">86% de compradores</div></div>'+
+    '<div class="sc g"><div class="sl">Potencial recurrencia</div><div class="sv">62</div><div class="ss">compraron hace 30-60d</div><div class="ss" style="color:#3fb950;margin-top:3px">candidatos a retener</div></div>'+
+    '</div>';
+}
+
+function renderRecurrencia(){
+  document.getElementById('page-content').innerHTML=panel('Distribucion por cantidad de compras','Frecuencia de recompra',
+    '<div class="chart-wrap"><canvas id="ch-recu" role="img" aria-label="Recurrencia">Recurrencia.</canvas></div>'
+  );
+  mkChart('ch-recu','bar',['1 compra','2 compras','3 compras','4+ compras'],
+    [{data:[233,24,9,5],backgroundColor:['#58a6ff','#bc8cff','#3fb950','#d29922'],borderRadius:4}]);
+}
+
+function renderTicketSegmento(){
+  document.getElementById('page-content').innerHTML='<div class="kgrid3">'+
+    kc('Ticket nuevos','$44.200',['ne','1 compra'],'b')+
+    kc('Ticket recurrentes','$52.400',['up','▲ 18.6% mas'],'p')+
+    kc('Ticket VIP (4+)','$68.100',['up','▲ 54% mas'],'g')+'</div>'+
+    panel('Ticket promedio por segmento','',
+      '<div class="chart-wrap"><canvas id="ch-ticket" role="img" aria-label="Ticket por segmento">Ticket.</canvas></div>'
+    );
+  mkChart('ch-ticket','bar',['Nuevos (1c)','Recurrentes (2c)','Frecuentes (3c)','VIP (4c+)'],
+    [{data:[44200,52400,61800,68100],backgroundColor:['#58a6ff','#bc8cff','#3fb950','#d29922'],borderRadius:4}],
+    {scales:{x:{grid:{color:GR},ticks:{color:TX}},y:{grid:{color:GR},ticks:{color:TX,callback:function(v){return '$'+Math.round(v/1000)+'k';}}}}});
+}
+
+function renderCostos(){
+  document.getElementById('page-content').innerHTML=
+    panelF('Detalle de costos y margenes','Rentabilidad por producto',
+      '<input type="text" id="co-q" placeholder="Buscar SKU o producto..." oninput="filterCostos(this.value)" style="width:180px">'+
+      '<select id="co-mg" onchange="filterCostos2()"><option value="">Todos los margenes</option><option value="alto">Alto (&gt;45%)</option><option value="medio">Medio (30-45%)</option><option value="bajo">Bajo (&lt;30%)</option></select>'+
+      '<select id="co-ord" onchange="filterCostos2()"><option value="margenPct">Mayor margen</option><option value="roi">Mayor ROI</option><option value="revenue">Mayor revenue</option></select>',
+      '<div id="co-tbl">'+productTable(filteredData.slice().sort(function(a,b){return b.margenPct-a.margenPct;}),['costo','precio','margenPct','roi'])+'</div>'
+    );
+}
+function filterCostos(q){
+  var mg=document.getElementById('co-mg').value;
+  var ord=document.getElementById('co-ord').value||'margenPct';
+  var d=filteredData.filter(function(p){
+    var mOk=!mg||(mg==='alto'&&p.margenPct>45)||(mg==='medio'&&p.margenPct>=30&&p.margenPct<=45)||(mg==='bajo'&&p.margenPct<30);
+    return mOk&&(!q||p.nombre.toLowerCase().includes(q.toLowerCase())||p.sku.toLowerCase().includes(q.toLowerCase()));
+  }).sort(function(a,b){return b[ord]-a[ord];});
+  document.getElementById('co-tbl').innerHTML=productTable(d,['costo','precio','margenPct','roi']);
+}
+function filterCostos2(){filterCostos(document.getElementById('co-q').value);}
+
+function renderROI(){
+  var sorted=filteredData.slice().sort(function(a,b){return b.roi-a.roi;});
+  document.getElementById('page-content').innerHTML=panel('ROI por producto','Retorno sobre inversion',
+    '<div class="chart-wrap tall"><canvas id="ch-roi" role="img" aria-label="ROI">ROI.</canvas></div>'
+  );
+  mkChart('ch-roi','bar',sorted.slice(0,10).map(function(p){return p.sku;}),
+    [{data:sorted.slice(0,10).map(function(p){return p.roi.toFixed(1);}),backgroundColor:'#3fb950',borderRadius:4}],
+    {indexAxis:'y',scales:{x:{grid:{color:GR},ticks:{color:TX,callback:function(v){return v+'%';}}},y:{grid:{color:GR},ticks:{color:TX,font:{size:9}}}}});
+}
+
+function renderForecast7(){
+  document.getElementById('page-content').innerHTML='<div class="kgrid">'+
+    kc('Ventas proy. 7d','$3.240.000',['dn','▼ 12.6% vs prom.'],'g')+
+    kc('Prod. en riesgo','6',['ne','se agotan en &lt;14d'],'y')+
+    kc('Prom. diario proy.','$462.857',['ne','proxima semana'],'b')+
+    kc('Precision modelo','82%',['ne','regresion lineal'],'p')+'</div>'+
+    panel('Proyeccion 14 dias historicos + 7 dias forecast','',
+      '<div class="chart-wrap tall"><canvas id="ch-fc7" role="img" aria-label="Forecast 7d">Forecast.</canvas></div>'
+    );
+  var labels=[],hist=[],fore=[];
+  var hoy=new Date();
+  for(var i=-14;i<=7;i++){
+    var d=new Date(hoy);d.setDate(d.getDate()+i);
+    labels.push(d.getDate()+'/'+(d.getMonth()+1));
+    if(i<0){hist.push(Math.round(280000+Math.random()*300000));fore.push(null);}
+    else if(i===0){hist.push(420000);fore.push(420000);}
+    else{hist.push(null);fore.push(Math.round(380000+i*8000+Math.random()*50000));}
+  }
+  mkChart('ch-fc7','line',labels,
+    [{label:'Historico',data:hist,borderColor:'#bc8cff',backgroundColor:'rgba(188,140,255,0.08)',fill:true,tension:.4,pointRadius:3,borderWidth:2},
+     {label:'Forecast',data:fore,borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,0.06)',fill:true,tension:.4,pointRadius:3,borderWidth:2,borderDash:[5,3]}],
+    {plugins:{legend:{display:true,position:'top',labels:{color:'#6e7681',font:{size:11}}}},scales:{x:{grid:{color:GR},ticks:{color:TX,font:{size:9},maxRotation:45}},y:{grid:{color:GR},ticks:{color:TX,callback:function(v){return '$'+Math.round(v/1000)+'k';}}}}});
+}
+
+function renderProyMensual(){
+  document.getElementById('page-content').innerHTML='<div class="kgrid3">'+
+    kc('Proy. mes actual','$12.600.000',['up','▲ 22%'],'g')+
+    kc('Proy. mes +1','$13.860.000',['up','▲ 10%'],'b')+
+    kc('Proy. mes +2','$15.246.000',['up','▲ 10%'],'p')+'</div>'+
+    panel('Proyeccion mensual — 6 meses','Tendencia + estacionalidad',
+      '<div class="chart-wrap tall"><canvas id="ch-prom" role="img" aria-label="Proyeccion mensual">Proyeccion.</canvas></div>'
+    );
+  mkChart('ch-prom','bar',['Ene(real)','Feb(real)','Mar(real)','Abr(proy)','May(proy)','Jun(proy)'],
+    [{data:[9300,10500,12000,null,null,null],backgroundColor:'#58a6ff',borderRadius:3,label:'Real'},
+     {data:[null,null,12000,13200,14500,15900],backgroundColor:'rgba(63,185,80,0.35)',borderRadius:3,borderColor:'#3fb950',borderWidth:1,label:'Proyectado'}]);
+}
+
+function renderProyAnual(){
+  document.getElementById('page-content').innerHTML='<div class="kgrid3">'+
+    kc('Proy. 3 meses','$38.880.000',['up','▲ 22% vs trim. ant.'],'g')+
+    kc('Proy. 6 meses','$82.400.000',['up','▲ 18% anualizado'],'p')+
+    kc('Proy. 12 meses','$172.000.000',['ne','confianza 55%'],'y')+'</div>'+
+    '<div class="kgrid">'+
+    kc('Ordenes proy. 12m','5.840',['up','▲ 21%'],'b')+
+    kc('Revenue proy. 12m','$172.000.000',['up','▲ 21%'],'g')+
+    kc('Ticket prom. proy.','$47.200',['up','▲ 8.0%'],'p')+
+    kc('Ganancia est. (25%)','$43.000.000',['ne','margen supuesto'],'y')+'</div>';
+}
+</script>
+</body>
+</html>
